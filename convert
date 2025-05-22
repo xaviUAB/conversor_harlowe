@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertidor d'Image Map a Twine (Harlowe)</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 20px; }
+        textarea { width: 100%; height: 200px; margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; cursor: pointer; margin-right: 10px; }
+        button:hover { background-color: #0056b3; }
+        pre { background-color: #f4f4f4; padding: 10px; border: 1px solid #ddd; overflow-x: auto; position: relative; }
+        h1, h2 { color: #333; }
+        .copy-button {
+            background-color: #28a745; /* Verd */
+            margin-top: 10px;
+        }
+        .copy-button:hover {
+            background-color: #218838;
+        }
+        .copied-message {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f0f0f0;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 0.8em;
+            color: #555;
+            display: none; /* Ocult per defecte */
+        }
+    </style>
+</head>
+<body>
+    <h1>Convertidor d'Image Map a Twine (Harlowe)</h1>
+    <p>Enganxa el teu codi HTML original de l'image map aquí:</p>
+    <textarea id="inputHtml" placeholder="""></textarea>
+
+    <button onclick="convertHtml()">Convertir a Twine (Harlowe)</button>
+
+    <h2>Codi HTML per a un passatge de Twine:</h2>
+    <p>Copia i enganxa aquest codi en el passatge de Twine. Recorda que **necessitaràs afegir el codi JavaScript** per fer funcionar els enllaços `data-passage` si no ho has fet ja.</p>
+    <pre id="outputHtml">
+        <span class="copied-message" id="copiedMessage">Copia't!</span>
+    </pre>
+    <button class="copy-button" onclick="copyCode()">Copiar codi</button>
+
+    <script>
+        function convertHtml() {
+            const inputHtml = document.getElementById('inputHtml').value;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(inputHtml, 'text/html');
+
+            const areas = doc.querySelectorAll('area');
+            let generatedSpans = '';
+
+            areas.forEach(area => {
+                const originalHref = area.getAttribute('href');
+                const originalTitle = area.getAttribute('title');
+
+                // 1. Afegeix la classe "hotspot-item"
+                area.setAttribute('class', 'hotspot-item');
+
+                if (originalHref) {
+                    // 2. Trasllada el valor del href a data-passage
+                    area.setAttribute('data-passage', originalHref);
+                    // 3. Elimina l'atribut href
+                    area.removeAttribute('href'); 
+                }
+                // 4. Elimina l'atribut target si existeix
+                area.removeAttribute('target');
+
+                // 5. Afegeix la línia span amb els valors originals de title i href
+                if (originalTitle && originalHref) {
+                    generatedSpans += `<span id="Ocult" style="display:none;">[[${originalTitle}|${originalHref}]]</span>\n`;
+                }
+            });
+
+            // Reconstruir el HTML de la imatge i el mapa
+            const imgTag = doc.querySelector('img') ? doc.querySelector('img').outerHTML : '';
+            const mapTag = doc.querySelector('map') ? doc.querySelector('map').outerHTML : '';
+            
+            // Codi HTML final per al passatge
+            // Afegim els spans generats al final del codi del mapa
+            const finalHtml = imgTag + '\n\n' + mapTag + '\n' + generatedSpans;
+            document.getElementById('outputHtml').textContent = finalHtml;
+
+            // Neteja el missatge de "Copia't!" si era visible
+            document.getElementById('copiedMessage').style.display = 'none';
+        }
+
+        function copyCode() {
+            const outputElement = document.getElementById('outputHtml');
+            const codeToCopy = outputElement.textContent;
+
+            // Crea un textarea temporal per copiar el text
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            // Mostra el missatge de "Copia't!"
+            const copiedMessage = document.getElementById('copiedMessage');
+            copiedMessage.style.display = 'block';
+            setTimeout(() => {
+                copiedMessage.style.display = 'none';
+            }, 2000); // Oculta el missatge després de 2 segons
+        }
+
+        // Carregar un exemple predeterminat per facilitar la prova
+        window.onload = function() {
+            const exampleHtml = ``;
+            document.getElementById('inputHtml').value = exampleHtml;
+            convertHtml(); // Converteix-ho automàticament a l'inici
+        };
+    </script>
+</body>
+</html>
