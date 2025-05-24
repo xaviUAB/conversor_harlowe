@@ -154,6 +154,17 @@
             width: calc(100% - 16px); 
             box-sizing: border-box;
         }
+        .copy-feedback {
+            color: green;
+            margin-left: 10px;
+            font-weight: bold;
+            display: inline-block;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .copy-feedback.show {
+            opacity: 1;
+        }
         button#copyCodeButton { 
             background-color: #007bff;
             color: white;
@@ -264,138 +275,9 @@
         <h2>3. Codi per a Twine (Harlowe)</h2>
         <p>Copia el següent codi i enganxa'l al teu passatge de Twine.</p>
         <textarea id="outputCode" readonly></textarea>
-        <button id="copyCodeButton">Copiar Codi</button>
+        <button id="copyCodeButton">Copiar Codi</button><span id="copyFeedback" class="copy-feedback">Codi copiat!</span>
 
-        <div id="instructions">
-            <h3>Instruccions per a Twine (Harlowe):</h3>
-            <p>1. **Pega el codi generat** en un passatge de Twine (per exemple, anomena'l `ImatgePrincipal`).</p>
-            <p>2. **Assegura't que la imatge sigui accessible**: Si la ruta de la imatge és `imatges/la_meva_imatge.png`, col·loca el teu arxiu de joc (HTML) i la carpeta `imatges` (amb la imatge dins) al mateix directori quan publiquis el joc.</p>
-            <p>3. **Afegeix aquest CSS al teu Story Stylesheet (el passatge `Stylesheet`):**</p>
-            <pre><code>.hotspot-item[data-passage]:hover, .hotspot-item[data-setter]:hover {
-    outline: 2px solid yellow; 
-    cursor: pointer;
-}
-.twine-image-wrapper {
-    position: relative; 
-    display: inline-block; 
-    margin: 0 auto; 
-    text-align: center; 
-    max-width: 100%; 
-    line-height: 0; 
-}
-.twine-image-wrapper img { 
-    max-width: 100%;
-    height: auto;
-    display: block; 
-    margin: 0 auto; 
-}
-#twineImageInfoDisplay {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    margin-top: 10px; 
-    font-size: 1em;
-    text-align: center;
-    display: none; 
-    max-width: 80%; 
-    box-sizing: border-box; 
-    margin-left: auto; 
-    margin-right: auto;
-    z-index: 1; 
-    line-height: normal; /* Ensures text flows correctly */
-    overflow: hidden; /* Added to prevent scrollbar */
-}
-/* El span #Ocult ja té display:none inline. */
-#Ocult { 
-    /* Pots afegir altres estils aquí si cal, però display:none el mantindrà ocult */
-}
-</code></pre>
-            <p>4. **Afegeix aquest JavaScript al teu Story JavaScript (el passatge `JavaScript` o `StoryInit`):**</p>
-            <pre><code>// Script per gestionar els hotspots d'imatges a Harlowe
-window.TWINE_IMAGE_INFO_DISPLAY_ID = 'twineImageInfoDisplay'; 
-function toggleImageInfo(text) {
-    var infoDisplay = jQuery('#' + window.TWINE_IMAGE_INFO_DISPLAY_ID);
-    if (text && text.trim() !== "") { infoDisplay.html(text).show(); } 
-    else { infoDisplay.html('').hide(); }
-}
-
-// Function to resize hotspots based on image scaling
-function resizeHotspots() {
-    var img = jQuery('#twine-image'); // Assuming you give your image an ID like 'twine-image'
-    if (!img.length || !img[0].naturalWidth) return;
-
-    var naturalWidth = img[0].naturalWidth;
-    var naturalHeight = img[0].naturalHeight;
-    var currentWidth = img.width();
-    var currentHeight = img.height();
-
-    var scaleX = currentWidth / naturalWidth;
-    var scaleY = currentHeight / naturalHeight;
-
-    jQuery('map[name="hotspotmap"] area').each(function() {
-        var $this = jQuery(this);
-        var originalCoords = $this.data('original-coords'); // Store original coords as data attribute
-        if (!originalCoords) {
-            originalCoords = $this.attr('coords');
-            $this.data('original-coords', originalCoords); // Save original coords
-        }
-
-        var coordsArray = originalCoords.split(',').map(Number);
-        var newCoords = [
-            Math.round(coordsArray[0] * scaleX),
-            Math.round(coordsArray[1] * scaleY),
-            Math.round(coordsArray[2] * scaleX),
-            Math.round(coordsArray[3] * scaleY)
-        ];
-        $this.attr('coords', newCoords.join(','));
-    });
-}
-
-// Call resizeHotspots on window load and resize
-jQuery(window).on('load resize', resizeHotspots);
-
-jQuery(document).on('click', '.hotspot-item[data-passage]', function() {
-    var passageName = jQuery(this).attr('data-passage');
-    var soundFile = jQuery(this).attr('data-sound');
-    toggleImageInfo(''); 
-    if (soundFile) { try { new Audio('sounds/' + soundFile).play(); } catch(e) { console.error("So:", e); } }
-    if (passageName) { Engine.play(passageName); }
-});
-jQuery(document).on('mouseenter', '.hotspot-item[data_info]', function() { toggleImageInfo(jQuery(this).attr('data_info')); });
-jQuery(document).on('mouseleave', '.hotspot-item[data_info]', function() { toggleImageInfo(''); });
-jQuery(document).on('click', '.hotspot-item[data-setter]', function() {
-    var setterCommand = jQuery(this).attr('data-setter'), soundFile = jQuery(this).attr('data-sound');
-    toggleImageInfo(''); 
-    if (soundFile) { try { new Audio('sounds/' + soundFile).play(); } catch(e) { console.error("So:", e); } }
-    if (setterCommand) {
-        try {
-            var parts = setterCommand.split(' to ');
-            if (parts.length === 2 && parts[0].trim().startsWith('$')) {
-                var varName = parts[0].trim(), varValueStr = parts[1].trim(), varValue, key = varName.substring(1);
-                if (!isNaN(parseFloat(varValueStr)) && isFinite(varValueStr)) varValue = parseFloat(varValueStr);
-                else if (varValueStr.toLowerCase()==='true') varValue = true; else if (varValueStr.toLowerCase()==='false') varValue = false;
-                else varValue = varValueStr.replace(/^'(.*)'$/, '$1').replace(/^"(.*)"$/, '$1');
-                if (typeof setup !== 'undefined' && Object.prototype.hasOwnProperty.call(setup, key)) setup[key] = varValue;
-                else if (typeof State !== 'undefined' && State.variables) State.variables[key] = varValue;
-            } else if (setterCommand.includes('+=')) {
-                var addParts = setterCommand.split('+=');
-                if (addParts.length === 2 && addParts[0].trim().startsWith('$')) {
-                    var varName = addParts[0].trim(), valueToAdd = parseFloat(addParts[1].trim()), key = varName.substring(1);
-                    if (!isNaN(valueToAdd)) {
-                        if (typeof setup !== 'undefined' && Object.prototype.hasOwnProperty.call(setup, key) && typeof setup[key] === 'number') setup[key] += valueToAdd;
-                        else if (typeof State !== 'undefined' && State.variables) {
-                            if (Object.prototype.hasOwnProperty.call(State.variables, key) && typeof State.variables[key] === 'number') State.variables[key] += valueToAdd;
-                            else if (!Object.prototype.hasOwnProperty.call(State.variables, key)) State.variables[key] = valueToAdd;
-                        }
-                    }
-                }
-            }
-        } catch (e) { console.error('Setter:', e); }
-    }
-});
-</code></pre>
-        </div>
+        
     </div>
 
     <script>
@@ -407,6 +289,7 @@ jQuery(document).on('click', '.hotspot-item[data-setter]', function() {
         const copyCodeButton = document.getElementById('copyCodeButton');
         const drawingInstructions = document.getElementById('drawingInstructions');
         const editorImageInfoDisplay = document.getElementById('editorImageInfoDisplay');
+        const copyFeedback = document.getElementById('copyFeedback'); // Nou element per al feedback
 
         let isDrawing = false;
         let isDragging = false;
@@ -418,7 +301,13 @@ jQuery(document).on('click', '.hotspot-item[data-setter]', function() {
         let hotspots = [];
         let hotspotIdCounter = 0;
 
+        // Funció per amagar el missatge de feedback
+        function hideCopyFeedback() {
+            copyFeedback.classList.remove('show');
+        }
+
         imageUpload.addEventListener('change', (e) => {
+            hideCopyFeedback(); // Amaga el feedback al canviar la imatge
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -453,6 +342,7 @@ jQuery(document).on('click', '.hotspot-item[data-setter]', function() {
         });
 
         imageEditor.addEventListener('mousedown', (e) => {
+            hideCopyFeedback(); // Amaga el feedback al començar a dibuixar/arrossegar
             if (imageDisplay.style.display === 'none' || !imageDisplay.src) return;
             if (e.target.classList.contains('hotspot-delete-button-visual')) return; 
             if (e.target.classList.contains('hotspot-area')) {
@@ -594,13 +484,13 @@ jQuery(document).on('click', '.hotspot-item[data-setter]', function() {
                     vLabel.textContent = type==='passage'?'Passatge destí:':'Variable i Valor:'; vInput.placeholder = type==='passage'?'Ex: Bosc':'Ex: $punts to 100';
                 };
                 toggle(hotspot.type);
-                item.querySelector('input[data-field="name"]').addEventListener('input', e => { hotspot.name = e.target.value; generateTwineCode(); });
-                item.querySelector('select[data-field="type"]').addEventListener('change', e => { hotspot.type = e.target.value; toggle(hotspot.type); generateTwineCode(); });
+                item.querySelector('input[data-field="name"]').addEventListener('input', e => { hotspot.name = e.target.value; generateTwineCode(); hideCopyFeedback(); }); // Amaga el feedback
+                item.querySelector('select[data-field="type"]').addEventListener('change', e => { hotspot.type = e.target.value; toggle(hotspot.type); generateTwineCode(); hideCopyFeedback(); }); // Amaga el feedback
                 ['value','titleText','sound','infoText','titleTextSetter','soundSetter','infoTextSetter'].forEach(f => {
                     const elType = (f === 'infoText' || f === 'infoTextSetter') ? 'textarea' : 'input';
-                    item.querySelector(`${elType}[data-field="${f}"]`).addEventListener('input', e => { hotspot[f] = e.target.value; generateTwineCode(); });
+                    item.querySelector(`${elType}[data-field="${f}"]`).addEventListener('input', e => { hotspot[f] = e.target.value; generateTwineCode(); hideCopyFeedback(); }); // Amaga el feedback
                 });
-                item.querySelector('.delete-config-button').addEventListener('click', () => removeHotspot(hotspot.id));
+                item.querySelector('.delete-config-button').addEventListener('click', () => { removeHotspot(hotspot.id); hideCopyFeedback(); }); // Amaga el feedback
             });
         }
 
@@ -615,12 +505,14 @@ jQuery(document).on('click', '.hotspot-item[data-setter]', function() {
             }
             const originalFileName = imageUpload.files[0].name;
             let twineCode = `<div class="twine-image-wrapper" style="max-width:${imageDisplay.naturalWidth}px;">\n`;
-            twineCode += `    <img id="twine-image" src="imatges/${originalFileName.replace(/"/g, '&quot;')}" usemap="#hotspotmap" alt="Imatge amb hotspots">\n`; 
+            // Hem eliminat l'ID "twine-image" aquí, ja que imageMapResizer actua sobre totes les imatges amb "usemap"
+            twineCode += `    <img src="imatges/${originalFileName.replace(/"/g, '&quot;')}" usemap="#hotspotmap" alt="Imatge amb hotspots">\n`; 
             twineCode += '    <map name="hotspotmap">\n';
             hotspots.forEach(hotspot => {
                 const coords = hotspot.coords;
                 const altText = (hotspot.name || `Hotspot ${hotspot.id}`).replace(/"/g, '&quot;');
-                let areaTag = `        <area shape="rect" coords="${coords}" alt="${altText}" class="hotspot-item" data-original-coords="${coords}"`; // Store original coords
+                // Ja no cal el data-original-coords aquí, ja que imageMapResizer gestiona la proporcionalitat internament
+                let areaTag = `        <area shape="rect" coords="${coords}" alt="${altText}" class="hotspot-item"`; 
                 if (hotspot.type === 'passage') {
                     if (hotspot.value) areaTag += ` data-passage="${hotspot.value.replace(/"/g, '&quot;')}"`;
                     if (hotspot.titleText) areaTag += ` title="${hotspot.titleText.replace(/"/g, '&quot;')}"`;
@@ -657,7 +549,7 @@ jQuery(document).on('click', '.hotspot-item[data-setter]', function() {
         copyCodeButton.addEventListener('click', () => {
             outputCode.select();
             document.execCommand('copy');
-            alert('Codi copiat al porta-retalls!');
+            copyFeedback.classList.add('show'); // Mostra el feedback
         });
 
         // Initialize display
@@ -665,6 +557,9 @@ jQuery(document).on('click', '.hotspot-item[data-setter]', function() {
         generateTwineCode();
 
         // Optional: Recalculate hotspot positions on window resize
+        // Aquesta part ja no és necessària per al redimensionament del mapa,
+        // ja que imageMapResizer ho gestiona, però mantenim renderHotspots
+        // per si altres elements de l'editor depenen d'ella.
         window.addEventListener('resize', renderHotspots);
     </script>
 </body>
