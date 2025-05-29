@@ -36,12 +36,12 @@
             align-items: center; 
             padding: 0; 
             height: auto; 
-            min-height: 400px; 
+            min-height: 400px;
             border: 1px dashed #ccc; 
             box-sizing: border-box; 
         }
         #imageDisplay {
-            max-width: 100%; 
+            max-width: 100%;
             height: auto; 
             display: block; 
             margin-bottom: 15px; 
@@ -73,7 +73,7 @@
             font-size: 12px;
             font-weight: bold;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            box-sizing: border-box; 
+            box-sizing: border-box;
         }
         .hotspot-delete-button-visual {
             position: absolute;
@@ -130,7 +130,7 @@
             border-radius: 4px;
             cursor: pointer;
             align-self: flex-end; 
-            margin-top: 10px; 
+            margin-top: 10px;
         }
         .hotspot-item button.delete-config-button:hover {
             background-color: #c82333;
@@ -165,7 +165,7 @@
         .copy-feedback.show {
             opacity: 1;
         }
-        button#copyCodeButton { 
+        button#copyCodeButton, button#loadCodeButton { 
             background-color: #007bff;
             color: white;
             border: none;
@@ -173,13 +173,13 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 1em;
-            margin-top: 10px; 
+            margin-top: 10px;
         }
-        button#copyCodeButton:hover {
+        button#copyCodeButton:hover, button#loadCodeButton:hover {
             background-color: #0056b3;
         }
         textarea { 
-            width: 100%; 
+            width: 100%;
             height: 80px; 
             margin-top: 5px; 
             padding: 8px; 
@@ -188,15 +188,15 @@
             font-family: monospace;
             white-space: pre-wrap; 
             overflow-y: auto; 
-            box-sizing: border-box; 
+            box-sizing: border-box;
         }
         #outputCode { 
-             height: 250px; 
+             height: 250px;
              white-space: pre; 
              width: calc(100% - 20px); 
              margin-left: auto;
              margin-right: auto;
-             font-size: 0.9em; 
+             font-size: 0.9em;
         }
         #instructions {
             background-color: #e9ecef;
@@ -237,7 +237,7 @@
             margin-left: auto;
             margin-right: auto;
             line-height: 1.4; 
-            overflow: hidden; /* Added to prevent scrollbar */
+            overflow: hidden; 
         }
     </style>
 </head>
@@ -258,7 +258,7 @@
             
             <p id="drawingInstructions">
                 Un cop carregada la imatge, fes clic i arrossega per dibuixar un hotspot.<br>
-                Fes clic <em>sobre</em> un hotspot ja creat i arrossega per moure'l. <br>
+                Fes clic <em>sobre</em> un hotspot ja creat i arrossega per moure'l.<br>
                 Fes clic a la 'X' vermella sobre un hotspot per eliminar-lo.
             </p>
         </div>
@@ -274,10 +274,8 @@
     <div class="panel" style="margin-top: 20px;">
         <h2>3. Codi per a Twine (Harlowe)</h2>
         <p>Copia el següent codi i enganxa'l al teu passatge de Twine.</p>
-        <textarea id="outputCode" readonly></textarea>
-        <button id="copyCodeButton">Copiar Codi</button><span id="copyFeedback" class="copy-feedback">Codi copiat!</span>
-
-        
+        <textarea id="outputCode"></textarea> <button id="copyCodeButton">Copiar Codi</button><span id="copyFeedback" class="copy-feedback">Codi copiat!</span>
+        <button id="loadCodeButton" style="margin-left: 10px;">Carregar Codi a l'Editor</button>
     </div>
 
     <script>
@@ -289,15 +287,15 @@
         const copyCodeButton = document.getElementById('copyCodeButton');
         const drawingInstructions = document.getElementById('drawingInstructions');
         const editorImageInfoDisplay = document.getElementById('editorImageInfoDisplay');
-        const copyFeedback = document.getElementById('copyFeedback'); // Nou element per al feedback
+        const copyFeedback = document.getElementById('copyFeedback');
+        const loadCodeButton = document.getElementById('loadCodeButton'); // Nou element per al botó de càrrega
 
         let isDrawing = false;
         let isDragging = false;
         let activeHotspotElement = null;
         let dragOffsetX, dragOffsetY;
         let startX, startY; 
-        let currentRect = null; 
-
+        let currentRect = null;
         let hotspots = [];
         let hotspotIdCounter = 0;
 
@@ -316,6 +314,7 @@
                     imageDisplay.style.display = 'block';
                     drawingInstructions.style.display = 'none'; 
                     editorImageInfoDisplay.style.display = 'none';
+           
                     imageDisplay.onload = () => {
                         const extraSpace = 80; 
                         imageEditor.style.minHeight = imageDisplay.offsetHeight + extraSpace + 'px';
@@ -333,7 +332,8 @@
                 };
                 reader.readAsDataURL(file);
             } else {
-                imageDisplay.src = ''; imageDisplay.style.display = 'none';
+                imageDisplay.src = '';
+                imageDisplay.style.display = 'none';
                 drawingInstructions.style.display = 'block';
                 editorImageInfoDisplay.style.display = 'none';
                 imageEditor.style.height = 'auto'; imageEditor.style.minHeight = '400px'; 
@@ -351,6 +351,7 @@
                 dragOffsetX = e.clientX - hotspotRect.left; dragOffsetY = e.clientY - hotspotRect.top;
                 activeHotspotElement.style.cursor = 'grabbing'; e.stopPropagation(); 
             } else if (imageEditor.contains(e.target) && (e.target === imageDisplay || e.target === imageEditor || e.target.parentElement === imageEditor || e.target.parentElement.parentElement === imageEditor ) ) { 
+ 
                 isDrawing = true; const imageRect = imageDisplay.getBoundingClientRect();
                 startX = e.clientX - imageRect.left; startY = e.clientY - imageRect.top;    
                 currentRect = document.createElement('div'); currentRect.classList.add('hotspot-area');
@@ -362,16 +363,17 @@
                 imageEditor.style.cursor = 'grabbing';
             }
         });
-        
         document.addEventListener('mousemove', (e) => {
             if (isDrawing && currentRect) {
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
                 let currentMouseEventX_onImage = e.clientX - imageRect.left, currentMouseEventY_onImage = e.clientY - imageRect.top;
                 let rLeft = Math.min(startX, currentMouseEventX_onImage), rTop = Math.min(startY, currentMouseEventY_onImage),
+         
                     rRight = Math.max(startX, currentMouseEventX_onImage), rBottom = Math.max(startY, currentMouseEventY_onImage);
                 rLeft = Math.max(0, rLeft); rTop = Math.max(0, rTop);
                 rRight = Math.min(imageRect.width, rRight); rBottom = Math.min(imageRect.height, rBottom);
                 let rWidth = rRight - rLeft, rHeight = rBottom - rTop;
+          
                 if (rWidth < 0) rWidth = 0; if (rHeight < 0) rHeight = 0;
                 currentRect.style.left = `${(imageRect.left - editorRect.left) + rLeft}px`;
                 currentRect.style.top = `${(imageRect.top - editorRect.top) + rTop}px`;
@@ -393,13 +395,16 @@
                 isDrawing = false; 
                 const natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight,
                       dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight; 
+  
                 const hotspotRectVis = currentRect.getBoundingClientRect(), imageRectVis = imageDisplay.getBoundingClientRect();
                 let l_disp = hotspotRectVis.left - imageRectVis.left, t_disp = hotspotRectVis.top - imageRectVis.top,
                     w_disp = hotspotRectVis.width, h_disp = hotspotRectVis.height;
                 currentRect.remove(); currentRect = null; 
+         
                 if (w_disp >= 5 && h_disp >= 5 && dispW && dispH) {
                     const sX = natW / dispW, sY = natH / dispH;
                     const fL = l_disp * sX, fT = t_disp * sY, fW = w_disp * sX, fH = h_disp * sY;
+           
                     const coords = [Math.round(fL),Math.round(fT),Math.round(fL+fW),Math.round(fT+fH)].join(',');
                     hotspotIdCounter++;
                     hotspots.push({ id: hotspotIdCounter, coords: coords, name: `Hotspot ${hotspotIdCounter}`,
@@ -408,7 +413,7 @@
                 }
                 renderHotspots(); generateTwineCode();
             } else if (isDragging && activeHotspotElement) {
-                isDragging = false; 
+                isDragging = false;
                 const hotspotId = parseInt(activeHotspotElement.dataset.hotspotId), hotspot = hotspots.find(h => h.id === hotspotId);
                 if (hotspot) {
                     const natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight,
@@ -420,7 +425,7 @@
                         const sX = natW/dispW, sY = natH/dispH;
                         const fL=l_disp*sX, fT=t_disp*sY, fW=w_disp*sX, fH=h_disp*sY;
                         hotspot.coords = [Math.round(fL),Math.round(fT),Math.round(fL+fW),Math.round(fT+fH)].join(',');
-                        generateTwineCode(); 
+                        generateTwineCode();
                     }
                 }
             }
@@ -428,20 +433,19 @@
             if(activeHotspotElement && !isDragging) activeHotspotElement.style.cursor = 'move';
             if(!isDragging) activeHotspotElement = null; 
         });
-        
         function renderHotspots() {
-            hotspotsContainerEl.innerHTML = ''; 
+            hotspotsContainerEl.innerHTML = '';
             document.querySelectorAll('#imageEditor .hotspot-area').forEach(el => { if (el !== currentRect) el.remove(); });
             if (hotspots.length === 0) hotspotsContainerEl.innerHTML = '<p>No hi ha hotspots creats.</p>';
             
-            const dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight,
-                  natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight;
+            // Només intentar visualitzar hotspots si hi ha una imatge carregada i amb dimensions vàlides
+            if (imageDisplay.src && imageDisplay.naturalWidth && imageDisplay.naturalHeight) {
+                const dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight,
+                      natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight;
 
-            if (imageDisplay.src && natW && natH) {
                 const imgRectGlob = imageDisplay.getBoundingClientRect(), editorRectGlob = imageEditor.getBoundingClientRect(),
                       offsetXinEd = imgRectGlob.left - editorRectGlob.left, offsetYinEd = imgRectGlob.top - editorRectGlob.top,
                       scaleX = dispW / natW, scaleY = dispH / natH;
-
                 hotspots.forEach(hotspot => {
                     const coordsArr = hotspot.coords.split(',').map(Number),
                           visRect = document.createElement('div');
@@ -454,8 +458,10 @@
                     visRect.addEventListener('mouseenter', () => {
                         let info = '';
                         if (hotspot.type === 'passage' && hotspot.infoText) info = hotspot.infoText;
+                  
                         else if (hotspot.type === 'setter' && hotspot.infoTextSetter) info = hotspot.infoTextSetter;
-                        if (info) { editorImageInfoDisplay.innerHTML = info.replace(/\n/g, '<br>'); editorImageInfoDisplay.style.display = 'block'; }
+                        if (info) { editorImageInfoDisplay.innerHTML = info.replace(/\n/g, '<br>');
+                        editorImageInfoDisplay.style.display = 'block'; }
                     });
                     visRect.addEventListener('mouseleave', () => { editorImageInfoDisplay.innerHTML = ''; editorImageInfoDisplay.style.display = 'none'; });
 
@@ -471,6 +477,7 @@
                 const item = document.createElement('div'); item.classList.add('hotspot-item'); item.dataset.hotspotId = hotspot.id;
                 item.innerHTML = `
                     <label>Nom Hotspot:</label><input type="text" data-field="name" value="${hotspot.name || ''}" placeholder="Ex: Porta">
+                 
                     <label>Acció:</label><select data-field="type"><option value="passage" ${hotspot.type==='passage'?'selected':''}>Anar Passatge</option><option value="setter" ${hotspot.type==='setter'?'selected':''}>Canviar Variable</option></select>
                     <label class="value-label">${hotspot.type==='passage'?'Passatge destí:':'Variable i Valor:'}</label><input type="text" data-field="value" value="${hotspot.value || ''}" placeholder="${hotspot.type==='passage'?'Ex: Bosc':'Ex: $punts to 100'}">
                     <div class="passage-specific-fields ${hotspot.type==='passage'?'':'hidden-field'}"><label>Tooltip:</label><input type="text" data-field="titleText" value="${hotspot.titleText || ''}"><label>So (Ex: 'clic.mp3'):</label><input type="text" data-field="sound" value="${hotspot.sound || ''}"><label>Info Textual (sota imatge):</label><textarea data-field="infoText">${hotspot.infoText || ''}</textarea></div>
@@ -479,18 +486,21 @@
                 hotspotsContainerEl.appendChild(item);
                 const pFields = item.querySelector('.passage-specific-fields'), sFields = item.querySelector('.setter-specific-fields'),
                       vLabel = item.querySelector('.value-label'), vInput = item.querySelector('input[data-field="value"]');
+   
                 const toggle = type => {
                     pFields.classList.toggle('hidden-field', type !== 'passage'); sFields.classList.toggle('hidden-field', type !== 'setter');
                     vLabel.textContent = type==='passage'?'Passatge destí:':'Variable i Valor:'; vInput.placeholder = type==='passage'?'Ex: Bosc':'Ex: $punts to 100';
                 };
+       
                 toggle(hotspot.type);
-                item.querySelector('input[data-field="name"]').addEventListener('input', e => { hotspot.name = e.target.value; generateTwineCode(); hideCopyFeedback(); }); // Amaga el feedback
-                item.querySelector('select[data-field="type"]').addEventListener('change', e => { hotspot.type = e.target.value; toggle(hotspot.type); generateTwineCode(); hideCopyFeedback(); }); // Amaga el feedback
+                item.querySelector('input[data-field="name"]').addEventListener('input', e => { hotspot.name = e.target.value; generateTwineCode(); hideCopyFeedback(); }); 
+                item.querySelector('select[data-field="type"]').addEventListener('change', e => { hotspot.type = e.target.value; toggle(hotspot.type); generateTwineCode(); hideCopyFeedback(); });
                 ['value','titleText','sound','infoText','titleTextSetter','soundSetter','infoTextSetter'].forEach(f => {
                     const elType = (f === 'infoText' || f === 'infoTextSetter') ? 'textarea' : 'input';
-                    item.querySelector(`${elType}[data-field="${f}"]`).addEventListener('input', e => { hotspot[f] = e.target.value; generateTwineCode(); hideCopyFeedback(); }); // Amaga el feedback
+                    item.querySelector(`${elType}[data-field="${f}"]`).addEventListener('input', e => { hotspot[f] = e.target.value; generateTwineCode(); hideCopyFeedback(); }); 
+             
                 });
-                item.querySelector('.delete-config-button').addEventListener('click', () => { removeHotspot(hotspot.id); hideCopyFeedback(); }); // Amaga el feedback
+                item.querySelector('.delete-config-button').addEventListener('click', () => { removeHotspot(hotspot.id); hideCopyFeedback(); });
             });
         }
 
@@ -501,17 +511,17 @@
 
         function generateTwineCode() {
             if (!imageDisplay.src || !imageDisplay.naturalWidth || !imageUpload.files || imageUpload.files.length === 0) { 
-                outputCode.value = "<p>Carrega una imatge per generar el codi.</p>"; return;
+                outputCode.value = "<p>Carrega una imatge per generar el codi.</p>";
+                return;
             }
             const originalFileName = imageUpload.files[0].name;
             let twineCode = `<div class="twine-image-wrapper" style="min-width:${imageDisplay.naturalWidth}px;">\n`;
-            // Hem eliminat l'ID "twine-image" aquí, ja que imageMapResizer actua sobre totes les imatges amb "usemap"
             twineCode += `    <img src="imatges/${originalFileName.replace(/"/g, '&quot;')}" usemap="#hotspotmap" alt="Imatge amb hotspots">\n`; 
             twineCode += '    <map name="hotspotmap">\n';
             hotspots.forEach(hotspot => {
                 const coords = hotspot.coords;
+  
                 const altText = (hotspot.name || `Hotspot ${hotspot.id}`).replace(/"/g, '&quot;');
-                // Ja no cal el data-original-coords aquí, ja que imageMapResizer gestiona la proporcionalitat internament
                 let areaTag = `        <area shape="rect" coords="${coords}" alt="${altText}" class="hotspot-item"`; 
                 if (hotspot.type === 'passage') {
                     if (hotspot.value) areaTag += ` data-passage="${hotspot.value.replace(/"/g, '&quot;')}"`;
@@ -524,19 +534,18 @@
                     if (hotspot.soundSetter) areaTag += ` data-sound="${hotspot.soundSetter.replace(/"/g, '&quot;')}"`;
                     if (hotspot.infoTextSetter) areaTag += ` data_info="${hotspot.infoTextSetter.replace(/"/g, '&quot;').replace(/\n/g, '<br>')}"`;
                 }
-                areaTag += '>\n'; twineCode += areaTag;
+                areaTag += '>\n';
+                twineCode += areaTag;
             });
             twineCode += '    </map>\n';
             twineCode += `    <div id="${window.TWINE_IMAGE_INFO_DISPLAY_ID || 'twineImageInfoDisplay'}" style="display: none;"></div>\n`;
-            twineCode += '</div>\n\n'; 
-
+            twineCode += '</div>\n\n';
             // --- INICI DELS ENLLAÇOS HARLOWE OCULTS ---
             twineCode += '<span id="Ocult" style="display:none;">\n';
             hotspots.forEach(hotspot => {
                 if (hotspot.type === 'passage' && hotspot.value) {
-                    // Escapem les cometes dins del valor del passatge per a l'ús segur en cadenes de Harlowe
                     const passageNameForLink = hotspot.value.replace(/"/g, '\\"');
-                    // Generem l'enllaç Harlowe. El text visible de l'enllaç serà el nom del passatge.
+                
                     const harloweLink = `    (link: "${passageNameForLink}")[(goto: "${passageNameForLink}")]`;
                     twineCode += `${harloweLink}\n`; 
                 }
@@ -549,18 +558,119 @@
         copyCodeButton.addEventListener('click', () => {
             outputCode.select();
             document.execCommand('copy');
-            copyFeedback.classList.add('show'); // Mostra el feedback
+            copyFeedback.classList.add('show'); 
         });
 
+        // Nou event listener per al botó de càrrega
+        loadCodeButton.addEventListener('click', () => {
+            hideCopyFeedback();
+            const codeToParse = outputCode.value;
+            if (codeToParse.trim() === "") {
+                alert("El camp de codi està buit. Enganxa el codi HTML/Harlowe per carregar.");
+                return;
+            }
+            parseTwineCode(codeToParse);
+        });
+
+        function parseTwineCode(code) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(code, 'text/html');
+
+            const imgElement = doc.querySelector('.twine-image-wrapper img');
+            if (!imgElement) {
+                alert("No s'ha trobat cap etiqueta <img> amb usemap dins de .twine-image-wrapper.");
+                return;
+            }
+
+            const imgSrc = imgElement.getAttribute('src');
+            if (!imgSrc) {
+                alert("La imatge no té un atribut 'src'.");
+                return;
+            }
+
+            // Actualitzar el camp de selecció de fitxer per mostrar el nom del fitxer
+            // Això només actualitza el nom visible, no carrega el fitxer realment.
+            const fileName = imgSrc.split('/').pop();
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(new File([], fileName)); // Crea un fitxer "buit" amb el nom
+            imageUpload.files = dataTransfer.files;
+
+            // No donem cap avís. Simplement intentem treballar amb la imatge actual.
+            // Si no hi ha imatge o les dimensions no són vàlides, renderHotspots ja ho gestiona.
+            
+            // Si la imatge actualment visible a l'editor no coincideix amb la del codi,
+            // els hotspots es visualitzaran de forma incorrecta.
+            // No hi haurà cap alerta per informar d'aquesta possible discrepància.
+            if (imageDisplay.src && imageDisplay.naturalWidth && imageDisplay.naturalHeight) {
+                // Si ja hi ha una imatge, podem ajustar l'editor a la seva mida.
+                const extraSpace = 80; 
+                imageEditor.style.minHeight = imageDisplay.offsetHeight + extraSpace + 'px';
+                imageEditor.style.height = imageDisplay.offsetHeight + extraSpace + 'px';
+            } else {
+                // Si no hi ha imatge carregada, assegurem-nos que l'editor torni al seu estat inicial
+                imageDisplay.style.display = 'none';
+                drawingInstructions.style.display = 'block';
+                editorImageInfoDisplay.style.display = 'none';
+                imageEditor.style.height = 'auto';
+                imageEditor.style.minHeight = '400px';
+            }
+
+            hotspots = []; // Netejar els hotspots existents abans de carregar
+            let maxHotspotId = 0;
+
+            const areaElements = doc.querySelectorAll('map[name="hotspotmap"] area');
+            areaElements.forEach(area => {
+                const coords = area.getAttribute('coords');
+                const altText = area.getAttribute('alt');
+                const dataPassage = area.getAttribute('data-passage');
+                const dataSetter = area.getAttribute('data-setter');
+                const title = area.getAttribute('title');
+                const dataSound = area.getAttribute('data-sound');
+                const dataInfo = area.getAttribute('data_info');
+
+                hotspotIdCounter++; // Incrementar per a cada nou hotspot
+                maxHotspotId = Math.max(maxHotspotId, hotspotIdCounter); // Mantenir el màxim ID
+
+                let newHotspot = {
+                    id: hotspotIdCounter,
+                    coords: coords,
+                    name: altText || `Hotspot ${hotspotIdCounter}`,
+                    type: 'passage', // Default
+                    value: '',
+                    titleText: '',
+                    sound: '',
+                    infoText: '',
+                    titleTextSetter: '',
+                    soundSetter: '',
+                    infoTextSetter: ''
+                };
+
+                if (dataPassage) {
+                    newHotspot.type = 'passage';
+                    newHotspot.value = dataPassage;
+                    newHotspot.titleText = title || '';
+                    newHotspot.sound = dataSound || '';
+                    newHotspot.infoText = dataInfo ? dataInfo.replace(/<br>/g, '\n') : '';
+                } else if (dataSetter) {
+                    newHotspot.type = 'setter';
+                    newHotspot.value = dataSetter;
+                    newHotspot.titleTextSetter = title || '';
+                    newHotspot.soundSetter = dataSound || '';
+                    newHotspot.infoTextSetter = dataInfo ? dataInfo.replace(/<br>/g, '\n') : '';
+                }
+                hotspots.push(newHotspot);
+            });
+            hotspotIdCounter = maxHotspotId; // Reinicialitzar el comptador d'ID amb el valor màxim trobat
+
+            renderHotspots();
+            generateTwineCode();
+        }
+        
         // Initialize display
         renderHotspots();
         generateTwineCode();
-
         // Optional: Recalculate hotspot positions on window resize
-        // Aquesta part ja no és necessària per al redimensionament del mapa,
-        // ja que imageMapResizer ho gestiona, però mantenim renderHotspots
-        // per si altres elements de l'editor depenen d'ella.
-        // window.addEventListener('resize', renderHotspots);
+        window.addEventListener('resize', renderHotspots);
     </script>
 </body>
 </html>
