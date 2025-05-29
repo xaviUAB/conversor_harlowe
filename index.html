@@ -504,7 +504,7 @@
                 outputCode.value = "<p>Carrega una imatge per generar el codi.</p>"; return;
             }
             const originalFileName = imageUpload.files[0].name;
-            let twineCode = `<div class="twine-image-wrapper" style="max-width:${imageDisplay.naturalWidth}px;">\n`;
+            let twineCode = `<div class="twine-image-wrapper" style="min-width:${imageDisplay.naturalWidth}px;">\n`;
             // Hem eliminat l'ID "twine-image" aquí, ja que imageMapResizer actua sobre totes les imatges amb "usemap"
             twineCode += `    <img src="imatges/${originalFileName.replace(/"/g, '&quot;')}" usemap="#hotspotmap" alt="Imatge amb hotspots">\n`; 
             twineCode += '    <map name="hotspotmap">\n';
@@ -560,7 +560,7 @@
         // Aquesta part ja no és necessària per al redimensionament del mapa,
         // ja que imageMapResizer ho gestiona, però mantenim renderHotspots
         // per si altres elements de l'editor depenen d'ella.
-        window.addEventListener('resize', renderHotspots);
+        // window.addEventListener('resize', renderHotspots);
     </script>
 </body>
 </html>
