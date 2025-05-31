@@ -28,393 +28,400 @@
         #imageEditor {
             flex: 2;
             min-width: 400px;
-            position: relative; 
+            position: relative;
             cursor: crosshair;
             display: flex;
-            flex-direction: column; 
-            justify-content: flex-start; 
-            align-items: center; 
-            padding: 0; 
-            height: auto; 
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 0;
+            height: auto;
             min-height: 400px;
-            border: 1px dashed #ccc; 
-            box-sizing: border-box; 
+            border: 1px dashed #ccc;
+            overflow: hidden; /* Important per controlar el desbordament visual */
+            box-sizing: border-box; /* Per incloure padding i border en el width/height */
         }
         #imageDisplay {
             max-width: 100%;
-            height: auto; 
-            display: block; 
-            margin-bottom: 15px; 
+            height: auto;
+            display: none;
+            user-select: none; /* Evita que la imatge es pugui seleccionar amb el ratolí */
+            -webkit-user-drag: none; /* Evita que la imatge es pugui arrossegar */
         }
         #drawingInstructions {
             text-align: center;
-            margin-top: 15px;
-            color: #555;
-            width: 100%; 
-            padding: 0 20px; 
-            box-sizing: border-box;
+            margin-top: 50px;
+            color: #666;
         }
-        #imageEditor > div:first-of-type { 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%; 
-        }
-        
         .hotspot-area {
             position: absolute;
             border: 2px dashed #007bff;
             background-color: rgba(0, 123, 255, 0.2);
-            cursor: move; 
+            cursor: move;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 12px;
             font-weight: bold;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            font-size: 14px;
+            overflow: hidden;
             box-sizing: border-box;
         }
-        .hotspot-delete-button-visual {
+        .hotspot-name-display {
             position: absolute;
-            top: -10px;
-            right: -10px;
-            width: 20px;
-            height: 20px;
-            background-color: red;
-            color: white;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 20px; 
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 10; 
-            border: 1px solid white; 
-            display: flex; 
-            align-items: center;
-            justify-content: center;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 2px 5px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 3px;
+            white-space: nowrap;
+            pointer-events: none; /* Permet el clic a través del nom */
         }
-
-        #hotspotListPanel { 
+        .hotspot-area:hover {
+            background-color: rgba(0, 123, 255, 0.4);
+        }
+        #hotspotsConfig {
             flex: 1;
             min-width: 300px;
         }
         .hotspot-item {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 15px;
             margin-bottom: 10px;
-            border-radius: 4px;
+            border-radius: 5px;
             background-color: #f9f9f9;
         }
         .hotspot-item label {
+            display: block;
+            margin-bottom: 5px;
             font-weight: bold;
-            font-size: 0.9em;
-            margin-top: 5px;
         }
-        .hotspot-item input, .hotspot-item select, .hotspot-item textarea { 
+        .hotspot-item input[type="text"],
+        .hotspot-item select,
+        .hotspot-item textarea {
+            width: calc(100% - 12px);
             padding: 8px;
+            margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            width: calc(100% - 16px); 
-            box-sizing: border-box;
         }
-        .hotspot-item button.delete-config-button { 
+        .hotspot-item textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .hotspot-item button.delete-config-button {
             background-color: #dc3545;
             color: white;
             border: none;
             padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
-            align-self: flex-end; 
-            margin-top: 10px;
+            float: right;
         }
         .hotspot-item button.delete-config-button:hover {
             background-color: #c82333;
         }
-        .form-group {
-            margin-bottom: 15px;
-            width: 100%; 
-            box-sizing: border-box;
-            padding: 0 20px; 
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input[type="file"] {
-            padding: 8px;
+        #outputCode {
+            width: calc(100% - 40px);
+            height: 300px;
+            margin-top: 20px;
+            padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            background-color: #eee;
-            width: calc(100% - 16px); 
-            box-sizing: border-box;
+            background-color: #e9ecef;
+            resize: vertical;
         }
-        .copy-feedback {
-            color: green;
-            margin-left: 10px;
-            font-weight: bold;
-            display: inline-block;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
+        .button-group {
+            margin-top: 10px;
         }
-        .copy-feedback.show {
-            opacity: 1;
-        }
-        button#copyCodeButton, button#loadCodeButton { 
+        .button-group button {
             background-color: #007bff;
             color: white;
             border: none;
             padding: 10px 15px;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 1em;
-            margin-top: 10px;
+            margin-right: 10px;
         }
-        button#copyCodeButton:hover, button#loadCodeButton:hover {
+        .button-group button:hover {
             background-color: #0056b3;
         }
-        textarea { 
-            width: 100%;
-            height: 80px; 
-            margin-top: 5px; 
-            padding: 8px; 
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: monospace;
-            white-space: pre-wrap; 
-            overflow-y: auto; 
-            box-sizing: border-box;
+        #copyFeedback {
+            display: none;
+            margin-left: 10px;
+            color: green;
+            font-weight: bold;
         }
-        #outputCode { 
-             height: 250px;
-             white-space: pre; 
-             width: calc(100% - 20px); 
-             margin-left: auto;
-             margin-right: auto;
-             font-size: 0.9em;
+        .hotspot-delete-button-visual {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            z-index: 10; /* Per assegurar que es vegi sobre el hotspot */
         }
-        #instructions {
-            background-color: #e9ecef;
-            padding: 15px;
-            border-left: 5px solid #007bff;
-            margin-top: 20px;
-            border-radius: 4px;
-        }
-        #instructions p {
-            margin-bottom: 5px;
-        }
-        #instructions code {
-            background-color: #fff;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-family: monospace;
-        }
-        pre {
-            background-color: #e9e9e9;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
+        .hotspot-delete-button-visual:hover {
+            background-color: #c82333;
         }
         .hidden-field {
             display: none;
         }
         #editorImageInfoDisplay {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
             background-color: rgba(0, 0, 0, 0.7);
             color: white;
-            padding: 10px 20px;
+            padding: 8px 15px;
             border-radius: 5px;
-            margin-top: 10px;
             font-size: 1em;
-            text-align: center;
             display: none;
-            max-width: 80%;
-            box-sizing: border-box;
-            margin-left: auto;
-            margin-right: auto;
-            line-height: 1.4; 
-            overflow: hidden; 
+            z-index: 100; /* Assegura que estigui per sobre de tot */
+            pointer-events: none; /* No interfereix amb els clics */
+        }
+        /* New styles for condition labels */
+        .condition-label-container label,
+        .condition-fields label {
+            color: darkred; /* Changed to dark red */
         }
     </style>
 </head>
 <body>
-    <h1>Editor de Hotspots per Imatges (Twine/Harlowe)</h1>
+    <h1>Editor de Hotspots per a Històries de Twine (Harlowe)</h1>
+    <p>1. Carrega una imatge. 2. Dibuixa rectangles sobre les àrees que vulguis fer clicables. 3. Configura cada hotspot. 4. Copia el codi generat i enganxa'l al passatge de Twine.</p>
 
     <div class="container">
-        <div class="panel" id="imageEditor">
-            <h2>1. Carrega la teva Imatge</h2>
-            <div class="form-group">
-                <label for="imageUpload">Selecciona una imatge:</label>
-                <input type="file" id="imageUpload" accept="image/*">
+        <div class="panel" id="imageConfig">
+            <h2>Configuració de la Imatge</h2>
+            <label for="imageUpload">Carregar Imatge:</label>
+            <input type="file" id="imageUpload" accept="image/*">
+            <div id="imageEditor">
+                <img id="imageDisplay" src="" alt="Imatge de la història" style="display: none;">
+                <p id="drawingInstructions">Carrega una imatge i dibuixa un hotspot!</p>
+                <div id="editorImageInfoDisplay"></div>
             </div>
-            <div> 
-                <img id="imageDisplay" src="" alt="Carrega una imatge" style="display: none;">
-                <div id="editorImageInfoDisplay"></div> 
-            </div>
-            
-            <p id="drawingInstructions">
-                Un cop carregada la imatge, fes clic i arrossega per dibuixar un hotspot.<br>
-                Fes clic <em>sobre</em> un hotspot ja creat i arrossega per moure'l.<br>
-                Fes clic a la 'X' vermella sobre un hotspot per eliminar-lo.
-            </p>
         </div>
 
-        <div class="panel" id="hotspotListPanel">
-            <h2>2. Configura els Hotspots</h2>
+        <div class="panel" id="hotspotsConfig">
+            <h2>Hotspots Configurats</h2>
             <div id="hotspotsContainer">
                 <p>No hi ha hotspots creats.</p>
             </div>
         </div>
     </div>
 
-    <div class="panel" style="margin-top: 20px;">
-        <h2>3. Codi per a Twine (Harlowe)</h2>
-        <p>Copia el següent codi i enganxa'l al teu passatge de Twine.</p>
-        <textarea id="outputCode"></textarea> <button id="copyCodeButton">Copiar Codi</button><span id="copyFeedback" class="copy-feedback">Codi copiat!</span>
-        <button id="loadCodeButton" style="margin-left: 10px;">Carregar Codi a l'Editor</button>
+    <div class="panel">
+        <h2>Codi Twine (Harlowe) Generat</h2>
+        <textarea id="outputCode"></textarea>
+        <div class="button-group">
+            <button id="copyCodeButton">Copiar Codi</button>
+            <button id="loadCodeButton">Carregar Codi existent</button>
+            <span id="copyFeedback">Codi copiat!</span>
+        </div>
     </div>
 
     <script>
         const imageUpload = document.getElementById('imageUpload');
         const imageDisplay = document.getElementById('imageDisplay');
         const imageEditor = document.getElementById('imageEditor');
-        const hotspotsContainerEl = document.getElementById('hotspotsContainer'); 
+        const hotspotsContainerEl = document.getElementById('hotspotsContainer');
         const outputCode = document.getElementById('outputCode');
         const copyCodeButton = document.getElementById('copyCodeButton');
         const drawingInstructions = document.getElementById('drawingInstructions');
         const editorImageInfoDisplay = document.getElementById('editorImageInfoDisplay');
         const copyFeedback = document.getElementById('copyFeedback');
-        const loadCodeButton = document.getElementById('loadCodeButton'); // Nou element per al botó de càrrega
+        const loadCodeButton = document.getElementById('loadCodeButton');
 
         let isDrawing = false;
         let isDragging = false;
         let activeHotspotElement = null;
         let dragOffsetX, dragOffsetY;
-        let startX, startY; 
+        let startX, startY;
         let currentRect = null;
         let hotspots = [];
         let hotspotIdCounter = 0;
 
-        // Funció per amagar el missatge de feedback
+        // Function to hide the "Code copied!" feedback
         function hideCopyFeedback() {
             copyFeedback.classList.remove('show');
         }
 
+        // Event listener for image upload
         imageUpload.addEventListener('change', (e) => {
-            hideCopyFeedback(); // Amaga el feedback al canviar la imatge
+            hideCopyFeedback(); // Hide feedback on new image upload
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     imageDisplay.src = event.target.result;
                     imageDisplay.style.display = 'block';
-                    drawingInstructions.style.display = 'none'; 
+                    drawingInstructions.style.display = 'none';
                     editorImageInfoDisplay.style.display = 'none';
-           
+
                     imageDisplay.onload = () => {
-                        const extraSpace = 80; 
+                        // Adjust image editor height based on image dimensions
+                        const extraSpace = 80;
                         imageEditor.style.minHeight = imageDisplay.offsetHeight + extraSpace + 'px';
                         imageEditor.style.height = imageDisplay.offsetHeight + extraSpace + 'px';
-                        hotspots = []; 
+                        hotspots = []; // Clear existing hotspots when a new image is loaded
                         renderHotspots();
                         generateTwineCode();
                     };
                     imageDisplay.onerror = () => {
+                        // Handle image loading errors
                         alert("Error al carregar la imatge.");
-                        imageDisplay.src = ''; imageDisplay.style.display = 'none';
+                        imageDisplay.src = '';
+                        imageDisplay.style.display = 'none';
                         drawingInstructions.style.display = 'block';
                         editorImageInfoDisplay.style.display = 'none';
                     }
                 };
                 reader.readAsDataURL(file);
             } else {
+                // Reset display if no file is selected
                 imageDisplay.src = '';
                 imageDisplay.style.display = 'none';
                 drawingInstructions.style.display = 'block';
                 editorImageInfoDisplay.style.display = 'none';
-                imageEditor.style.height = 'auto'; imageEditor.style.minHeight = '400px'; 
-                hotspots = []; renderHotspots(); generateTwineCode();
+                imageEditor.style.height = 'auto';
+                imageEditor.style.minHeight = '400px';
+                hotspots = [];
+                renderHotspots();
+                generateTwineCode();
             }
         });
 
+        // Mouse down event listener for image editor (drawing and dragging)
         imageEditor.addEventListener('mousedown', (e) => {
-            hideCopyFeedback(); // Amaga el feedback al començar a dibuixar/arrossegar
-            if (imageDisplay.style.display === 'none' || !imageDisplay.src) return;
-            if (e.target.classList.contains('hotspot-delete-button-visual')) return; 
+            hideCopyFeedback(); // Hide feedback on interaction
+            if (imageDisplay.style.display === 'none' || !imageDisplay.src) return; // Only interact if an image is loaded
+            if (e.target.classList.contains('hotspot-delete-button-visual')) return; // Ignore clicks on delete button
+
             if (e.target.classList.contains('hotspot-area')) {
-                isDragging = true; activeHotspotElement = e.target;
+                // Start dragging an existing hotspot
+                isDragging = true;
+                activeHotspotElement = e.target;
                 const hotspotRect = activeHotspotElement.getBoundingClientRect();
-                dragOffsetX = e.clientX - hotspotRect.left; dragOffsetY = e.clientY - hotspotRect.top;
-                activeHotspotElement.style.cursor = 'grabbing'; e.stopPropagation(); 
-            } else if (imageEditor.contains(e.target) && (e.target === imageDisplay || e.target === imageEditor || e.target.parentElement === imageEditor || e.target.parentElement.parentElement === imageEditor ) ) { 
- 
-                isDrawing = true; const imageRect = imageDisplay.getBoundingClientRect();
-                startX = e.clientX - imageRect.left; startY = e.clientY - imageRect.top;    
-                currentRect = document.createElement('div'); currentRect.classList.add('hotspot-area');
+                dragOffsetX = e.clientX - hotspotRect.left;
+                dragOffsetY = e.clientY - hotspotRect.top;
+                activeHotspotElement.style.cursor = 'grabbing';
+                e.stopPropagation(); // Prevent drawing when dragging
+            } else if (imageEditor.contains(e.target) && (e.target === imageDisplay || e.target === imageEditor || e.target.parentElement === imageEditor || e.target.parentElement.parentElement === imageEditor ) ) {
+                // Start drawing a new hotspot
+                isDrawing = true;
+                const imageRect = imageDisplay.getBoundingClientRect();
+                startX = e.clientX - imageRect.left;
+                startY = e.clientY - imageRect.top;
+                currentRect = document.createElement('div');
+                currentRect.classList.add('hotspot-area');
                 const editorRect = imageEditor.getBoundingClientRect();
                 currentRect.style.left = `${e.clientX - editorRect.left}px`;
                 currentRect.style.top = `${e.clientY - editorRect.top}px`;
-                currentRect.style.width = '0px'; currentRect.style.height = '0px';
-                currentRect.style.cursor = 'crosshair'; imageEditor.appendChild(currentRect);
+                currentRect.style.width = '0px';
+                currentRect.style.height = '0px';
+                currentRect.style.cursor = 'crosshair';
+                imageEditor.appendChild(currentRect);
                 imageEditor.style.cursor = 'grabbing';
             }
         });
+
+        // Mouse move event listener for drawing and dragging
         document.addEventListener('mousemove', (e) => {
             if (isDrawing && currentRect) {
+                // Update dimensions of the new hotspot being drawn
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
                 let currentMouseEventX_onImage = e.clientX - imageRect.left, currentMouseEventY_onImage = e.clientY - imageRect.top;
                 let rLeft = Math.min(startX, currentMouseEventX_onImage), rTop = Math.min(startY, currentMouseEventY_onImage),
-         
                     rRight = Math.max(startX, currentMouseEventX_onImage), rBottom = Math.max(startY, currentMouseEventY_onImage);
-                rLeft = Math.max(0, rLeft); rTop = Math.max(0, rTop);
-                rRight = Math.min(imageRect.width, rRight); rBottom = Math.min(imageRect.height, rBottom);
+                
+                // Clamp coordinates to image boundaries
+                rLeft = Math.max(0, rLeft);
+                rTop = Math.max(0, rTop);
+                rRight = Math.min(imageRect.width, rRight);
+                rBottom = Math.min(imageRect.height, rBottom);
+                
                 let rWidth = rRight - rLeft, rHeight = rBottom - rTop;
-          
-                if (rWidth < 0) rWidth = 0; if (rHeight < 0) rHeight = 0;
+
+                if (rWidth < 0) rWidth = 0;
+                if (rHeight < 0) rHeight = 0;
+
                 currentRect.style.left = `${(imageRect.left - editorRect.left) + rLeft}px`;
                 currentRect.style.top = `${(imageRect.top - editorRect.top) + rTop}px`;
-                currentRect.style.width = `${rWidth}px`; currentRect.style.height = `${rHeight}px`;
-            } else if (isDragging && activeHotspotElement) { 
+                currentRect.style.width = `${rWidth}px`;
+                currentRect.style.height = `${rHeight}px`;
+            } else if (isDragging && activeHotspotElement) {
+                // Update position of the dragged hotspot
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
                 let newLeftInEditor = e.clientX - editorRect.left - dragOffsetX, newTopInEditor = e.clientY - editorRect.top - dragOffsetY;
                 const hotspotWidth = activeHotspotElement.offsetWidth, hotspotHeight = activeHotspotElement.offsetHeight,
                       imageLeftInEditor = imageRect.left - editorRect.left, imageTopInEditor = imageRect.top - editorRect.top,
                       imageRightInEditor = imageLeftInEditor + imageRect.width, imageBottomInEditor = imageTopInEditor + imageRect.height;
+                
+                // Clamp hotspot position to image boundaries
                 newLeftInEditor = Math.max(imageLeftInEditor, Math.min(newLeftInEditor, imageRightInEditor - hotspotWidth));
                 newTopInEditor = Math.max(imageTopInEditor, Math.min(newTopInEditor, imageBottomInEditor - hotspotHeight));
-                activeHotspotElement.style.left = `${newLeftInEditor}px`; activeHotspotElement.style.top = `${newTopInEditor}px`;
+                
+                activeHotspotElement.style.left = `${newLeftInEditor}px`;
+                activeHotspotElement.style.top = `${newTopInEditor}px`;
             }
         });
 
-        document.addEventListener('mouseup', (e) => { 
+        // Mouse up event listener for finishing drawing or dragging
+        document.addEventListener('mouseup', (e) => {
             if (isDrawing && currentRect) {
-                isDrawing = false; 
+                // Finish drawing a new hotspot
+                isDrawing = false;
                 const natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight,
-                      dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight; 
-  
+                      dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight;
+
                 const hotspotRectVis = currentRect.getBoundingClientRect(), imageRectVis = imageDisplay.getBoundingClientRect();
                 let l_disp = hotspotRectVis.left - imageRectVis.left, t_disp = hotspotRectVis.top - imageRectVis.top,
                     w_disp = hotspotRectVis.width, h_disp = hotspotRectVis.height;
-                currentRect.remove(); currentRect = null; 
-         
-                if (w_disp >= 5 && h_disp >= 5 && dispW && dispH) {
+                currentRect.remove(); // Remove the temporary drawing rectangle
+                currentRect = null;
+
+                if (w_disp >= 5 && h_disp >= 5 && dispW && dispH) { // Only add if it's a reasonable size
                     const sX = natW / dispW, sY = natH / dispH;
                     const fL = l_disp * sX, fT = t_disp * sY, fW = w_disp * sX, fH = h_disp * sY;
-           
+
                     const coords = [Math.round(fL),Math.round(fT),Math.round(fL+fW),Math.round(fT+fH)].join(',');
                     hotspotIdCounter++;
-                    hotspots.push({ id: hotspotIdCounter, coords: coords, name: `Hotspot ${hotspotIdCounter}`,
-                        type: 'passage', value: '', titleText: '', sound: '', infoText: '', 
-                        titleTextSetter: '', soundSetter: '', infoTextSetter: '' });
+                    hotspots.push({
+                        id: hotspotIdCounter,
+                        coords: coords,
+                        name: `Hotspot ${hotspotIdCounter}`,
+                        type: 'passage',
+                        value: '',
+                        titleText: '',
+                        sound: '',
+                        infoText: '', // This field will now store the Harlowe text
+                        titleTextSetter: '',
+                        soundSetter: '',
+                        infoTextSetter: '', // This field will now store the Harlowe text
+                        hasCondition: false,
+                        conditionVariable: '',
+                        conditionValue: ''
+                    });
                 }
-                renderHotspots(); generateTwineCode();
+                renderHotspots();
+                generateTwineCode();
             } else if (isDragging && activeHotspotElement) {
+                // Finish dragging an existing hotspot
                 isDragging = false;
-                const hotspotId = parseInt(activeHotspotElement.dataset.hotspotId), hotspot = hotspots.find(h => h.id === hotspotId);
+                const hotspotId = parseInt(activeHotspotElement.dataset.hotspotId);
+                const hotspot = hotspots.find(h => h.id === hotspotId);
                 if (hotspot) {
                     const natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight,
                           dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight;
@@ -429,141 +436,257 @@
                     }
                 }
             }
-            imageEditor.style.cursor = 'crosshair';
-            if(activeHotspotElement && !isDragging) activeHotspotElement.style.cursor = 'move';
-            if(!isDragging) activeHotspotElement = null; 
+            imageEditor.style.cursor = 'crosshair'; // Reset cursor
+            if(activeHotspotElement && !isDragging) activeHotspotElement.style.cursor = 'move'; // Reset hotspot cursor
+            if(!isDragging) activeHotspotElement = null; // Clear active hotspot
         });
+
+        // Function to render hotspots in the image editor and configuration panel
         function renderHotspots() {
-            hotspotsContainerEl.innerHTML = '';
+            hotspotsContainerEl.innerHTML = ''; // Clear current hotspot configurations
+            // Remove visual hotspot elements from the image editor
             document.querySelectorAll('#imageEditor .hotspot-area').forEach(el => { if (el !== currentRect) el.remove(); });
-            if (hotspots.length === 0) hotspotsContainerEl.innerHTML = '<p>No hi ha hotspots creats.</p>';
             
-            // Només intentar visualitzar hotspots si hi ha una imatge carregada i amb dimensions vàlides
+            if (hotspots.length === 0) hotspotsContainerEl.innerHTML = '<p>No hi ha hotspots creats.</p>';
+
             if (imageDisplay.src && imageDisplay.naturalWidth && imageDisplay.naturalHeight) {
                 const dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight,
                       natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight;
-
                 const imgRectGlob = imageDisplay.getBoundingClientRect(), editorRectGlob = imageEditor.getBoundingClientRect(),
                       offsetXinEd = imgRectGlob.left - editorRectGlob.left, offsetYinEd = imgRectGlob.top - editorRectGlob.top,
                       scaleX = dispW / natW, scaleY = dispH / natH;
+                
                 hotspots.forEach(hotspot => {
                     const coordsArr = hotspot.coords.split(',').map(Number),
                           visRect = document.createElement('div');
-                    visRect.classList.add('hotspot-area'); visRect.dataset.hotspotId = hotspot.id;
+                    visRect.classList.add('hotspot-area');
+                    visRect.dataset.hotspotId = hotspot.id;
+                    // Position and size visual hotspot based on scaled coordinates
                     visRect.style.left = `${(coordsArr[0] * scaleX) + offsetXinEd}px`;
                     visRect.style.top = `${(coordsArr[1] * scaleY) + offsetYinEd}px`;
                     visRect.style.width = `${(coordsArr[2] - coordsArr[0]) * scaleX}px`;
                     visRect.style.height = `${(coordsArr[3] - coordsArr[1]) * scaleY}px`;
-                    
+
+                    // On editor, we don't need to evaluate Harlowe, just display the text as is
                     visRect.addEventListener('mouseenter', () => {
                         let info = '';
                         if (hotspot.type === 'passage' && hotspot.infoText) info = hotspot.infoText;
-                  
                         else if (hotspot.type === 'setter' && hotspot.infoTextSetter) info = hotspot.infoTextSetter;
-                        if (info) { editorImageInfoDisplay.innerHTML = info.replace(/\n/g, '<br>');
-                        editorImageInfoDisplay.style.display = 'block'; }
+                        if (info) {
+                            editorImageInfoDisplay.innerHTML = info.replace(/\n/g, '<br>');
+                            editorImageInfoDisplay.style.display = 'block';
+                        }
                     });
                     visRect.addEventListener('mouseleave', () => { editorImageInfoDisplay.innerHTML = ''; editorImageInfoDisplay.style.display = 'none'; });
 
+                    const nameDisplay = document.createElement('div');
+                    nameDisplay.classList.add('hotspot-name-display');
+                    nameDisplay.textContent = hotspot.name || `Hotspot ${hotspot.id}`;
+                    visRect.appendChild(nameDisplay);
+
                     const delBtn = document.createElement('div');
-                    delBtn.classList.add('hotspot-delete-button-visual'); delBtn.textContent = 'X';
+                    delBtn.classList.add('hotspot-delete-button-visual');
+                    delBtn.textContent = 'X';
                     delBtn.title = "Eliminar aquest hotspot";
                     delBtn.addEventListener('click', (e) => { e.stopPropagation(); removeHotspot(hotspot.id); });
-                    visRect.appendChild(delBtn); imageEditor.appendChild(visRect);
+                    visRect.appendChild(delBtn);
+                    imageEditor.appendChild(visRect);
                 });
             }
 
+            // Render configuration items for each hotspot
             hotspots.forEach(hotspot => {
-                const item = document.createElement('div'); item.classList.add('hotspot-item'); item.dataset.hotspotId = hotspot.id;
+                const item = document.createElement('div');
+                item.classList.add('hotspot-item');
+                item.dataset.hotspotId = hotspot.id;
                 item.innerHTML = `
                     <label>Nom Hotspot:</label><input type="text" data-field="name" value="${hotspot.name || ''}" placeholder="Ex: Porta">
-                 
                     <label>Acció:</label><select data-field="type"><option value="passage" ${hotspot.type==='passage'?'selected':''}>Anar Passatge</option><option value="setter" ${hotspot.type==='setter'?'selected':''}>Canviar Variable</option></select>
                     <label class="value-label">${hotspot.type==='passage'?'Passatge destí:':'Variable i Valor:'}</label><input type="text" data-field="value" value="${hotspot.value || ''}" placeholder="${hotspot.type==='passage'?'Ex: Bosc':'Ex: $punts to 100'}">
-                    <div class="passage-specific-fields ${hotspot.type==='passage'?'':'hidden-field'}"><label>Tooltip:</label><input type="text" data-field="titleText" value="${hotspot.titleText || ''}"><label>So (Ex: 'clic.mp3'):</label><input type="text" data-field="sound" value="${hotspot.sound || ''}"><label>Info Textual (sota imatge):</label><textarea data-field="infoText">${hotspot.infoText || ''}</textarea></div>
-                    <div class="setter-specific-fields ${hotspot.type==='setter'?'':'hidden-field'}"><label>Tooltip (Setter):</label><input type="text" data-field="titleTextSetter" value="${hotspot.titleTextSetter || ''}"><label>So (Setter):</label><input type="text" data-field="soundSetter" value="${hotspot.soundSetter || ''}"><label>Info Textual (Setter):</label><textarea data-field="infoTextSetter">${hotspot.infoTextSetter || ''}</textarea></div>
+
+                    <div class="condition-label-container ${hotspot.type==='passage'?'':'hidden-field'}">
+                        <label>Condició:</label>
+                        <input type="checkbox" data-field="hasCondition" ${hotspot.hasCondition ? 'checked' : ''}>
+                    </div>
+                    <div class="condition-fields ${hotspot.hasCondition && hotspot.type === 'passage' ? '' : 'hidden-field'}">
+                        <label>Variable (Condició):</label><input type="text" data-field="conditionVariable" value="${hotspot.conditionVariable || ''}" placeholder="Ex: $clau">
+                        <label>Valor (Condició):</label><input type="text" data-field="conditionValue" value="${hotspot.conditionValue || ''}" placeholder="Ex: true o 1">
+                    </div>
+                    <div class="passage-specific-fields ${hotspot.type==='passage'?'':'hidden-field'}">
+                        <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleText" value="${hotspot.titleText || ''}">
+                        <label>So (nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="sound" value="${hotspot.sound || ''}">
+                        <label>Info Textual (sota imatge - suporta Harlowe):</label><textarea data-field="infoText">${hotspot.infoText || ''}</textarea>
+                    </div>
+                    <div class="setter-specific-fields ${hotspot.type==='setter'?'':'hidden-field'}">
+                        <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleTextSetter" value="${hotspot.titleTextSetter || ''}">
+                        <label>So (nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="soundSetter" value="${hotspot.soundSetter || ''}">
+                        <label>Info Textual (sota imatge - suporta Harlowe):</label><textarea data-field="infoTextSetter">${hotspot.infoTextSetter || ''}</textarea>
+                    </div>
                     <button class="delete-config-button">Eliminar</button>`;
                 hotspotsContainerEl.appendChild(item);
-                const pFields = item.querySelector('.passage-specific-fields'), sFields = item.querySelector('.setter-specific-fields'),
-                      vLabel = item.querySelector('.value-label'), vInput = item.querySelector('input[data-field="value"]');
-   
+
+                const pFields = item.querySelector('.passage-specific-fields');
+                const sFields = item.querySelector('.setter-specific-fields');
+                const vLabel = item.querySelector('.value-label');
+                const vInput = item.querySelector('input[data-field="value"]');
+                const hasConditionCheckbox = item.querySelector('input[data-field="hasCondition"]');
+                const conditionFields = item.querySelector('.condition-fields');
+                const conditionLabelContainer = item.querySelector('.condition-label-container');
+
+                // Function to toggle visibility of fields based on hotspot type
                 const toggle = type => {
-                    pFields.classList.toggle('hidden-field', type !== 'passage'); sFields.classList.toggle('hidden-field', type !== 'setter');
-                    vLabel.textContent = type==='passage'?'Passatge destí:':'Variable i Valor:'; vInput.placeholder = type==='passage'?'Ex: Bosc':'Ex: $punts to 100';
+                    pFields.classList.toggle('hidden-field', type !== 'passage');
+                    sFields.classList.toggle('hidden-field', type !== 'setter');
+                    vLabel.textContent = type==='passage'?'Passatge destí:':'Variable i Valor:';
+                    vInput.placeholder = type==='passage'?'Ex: Bosc':'Ex: $punts to 100';
+
+                    const isPassageType = type === 'passage';
+                    conditionLabelContainer.classList.toggle('hidden-field', !isPassageType);
+                    if (!isPassageType) {
+                        conditionFields.classList.add('hidden-field');
+                        hasConditionCheckbox.checked = false;
+                        hotspot.hasCondition = false;
+                    } else {
+                        conditionFields.classList.toggle('hidden-field', !hotspot.hasCondition);
+                    }
                 };
-       
-                toggle(hotspot.type);
-                item.querySelector('input[data-field="name"]').addEventListener('input', e => { hotspot.name = e.target.value; generateTwineCode(); hideCopyFeedback(); }); 
-                item.querySelector('select[data-field="type"]').addEventListener('change', e => { hotspot.type = e.target.value; toggle(hotspot.type); generateTwineCode(); hideCopyFeedback(); });
+
+                toggle(hotspot.type); // Initial toggle based on current type
+
+                // Event listeners for updating hotspot properties
+                item.querySelector('input[data-field="name"]').addEventListener('input', e => {
+                    hotspot.name = e.target.value;
+                    generateTwineCode();
+                    hideCopyFeedback();
+                    const hotspotElement = document.querySelector(`.hotspot-area[data-hotspot-id="${hotspot.id}"] .hotspot-name-display`);
+                    if (hotspotElement) {
+                        hotspotElement.textContent = e.target.value;
+                    }
+                });
+                item.querySelector('select[data-field="type"]').addEventListener('change', e => {
+                    hotspot.type = e.target.value;
+                    toggle(hotspot.type);
+                    generateTwineCode();
+                    hideCopyFeedback();
+                });
                 ['value','titleText','sound','infoText','titleTextSetter','soundSetter','infoTextSetter'].forEach(f => {
                     const elType = (f === 'infoText' || f === 'infoTextSetter') ? 'textarea' : 'input';
-                    item.querySelector(`${elType}[data-field="${f}"]`).addEventListener('input', e => { hotspot[f] = e.target.value; generateTwineCode(); hideCopyFeedback(); }); 
-             
+                    const element = item.querySelector(`${elType}[data-field="${f}"]`);
+                    if (element) {
+                        element.addEventListener('input', e => {
+                            hotspot[f] = e.target.value;
+                            generateTwineCode();
+                            hideCopyFeedback();
+                        });
+                    }
                 });
+
+                hasConditionCheckbox.addEventListener('change', e => {
+                    hotspot.hasCondition = e.target.checked;
+                    conditionFields.classList.toggle('hidden-field', !hotspot.hasCondition);
+                    generateTwineCode();
+                    hideCopyFeedback();
+                });
+
+                ['conditionVariable', 'conditionValue'].forEach(f => {
+                    const element = item.querySelector(`input[data-field="${f}"]`);
+                    if (element) {
+                        element.addEventListener('input', e => {
+                            hotspot[f] = e.target.value;
+                            generateTwineCode();
+                            hideCopyFeedback();
+                        });
+                    }
+                });
+
                 item.querySelector('.delete-config-button').addEventListener('click', () => { removeHotspot(hotspot.id); hideCopyFeedback(); });
             });
         }
 
+        // Function to remove a hotspot
         function removeHotspot(id) {
             hotspots = hotspots.filter(h => h.id !== id);
-            renderHotspots(); generateTwineCode();
+            renderHotspots();
+            generateTwineCode();
         }
 
+        // Function to generate Twine (Harlowe) code
         function generateTwineCode() {
-            if (!imageDisplay.src || !imageDisplay.naturalWidth || !imageUpload.files || imageUpload.files.length === 0) { 
+            if (!imageDisplay.src || !imageDisplay.naturalWidth || !imageUpload.files || imageUpload.files.length === 0) {
                 outputCode.value = "<p>Carrega una imatge per generar el codi.</p>";
                 return;
             }
             const originalFileName = imageUpload.files[0].name;
             let twineCode = `<div class="twine-image-wrapper" style="min-width:${imageDisplay.naturalWidth}px;">\n`;
-            twineCode += `    <img src="imatges/${originalFileName.replace(/"/g, '&quot;')}" usemap="#hotspotmap" alt="Imatge amb hotspots">\n`; 
+            twineCode += `    <img src="imatges/${originalFileName.replace(/"/g, '&quot;')}" usemap="#hotspotmap" alt="Imatge amb hotspots">\n`;
             twineCode += '    <map name="hotspotmap">\n';
             hotspots.forEach(hotspot => {
                 const coords = hotspot.coords;
-  
+
                 const altText = (hotspot.name || `Hotspot ${hotspot.id}`).replace(/"/g, '&quot;');
-                let areaTag = `        <area shape="rect" coords="${coords}" alt="${altText}" class="hotspot-item"`; 
+                let areaTag = `        <area shape="rect" coords="${coords}" alt="${altText}" class="hotspot-item"`;
                 if (hotspot.type === 'passage') {
                     if (hotspot.value) areaTag += ` data-passage="${hotspot.value.replace(/"/g, '&quot;')}"`;
                     if (hotspot.titleText) areaTag += ` title="${hotspot.titleText.replace(/"/g, '&quot;')}"`;
                     if (hotspot.sound) areaTag += ` data-sound="${hotspot.sound.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.infoText) areaTag += ` data_info="${hotspot.infoText.replace(/"/g, '&quot;').replace(/\n/g, '<br>')}"`;
+                    if (hotspot.infoText) areaTag += ` data-info-harlowe="${hotspot.infoText.replace(/"/g, '&quot;')}"`;
+
+                    if (hotspot.hasCondition) {
+                        if (hotspot.conditionVariable) areaTag += ` data-condition-var="${hotspot.conditionVariable.replace(/"/g, '&quot;')}"`;
+                        if (hotspot.conditionValue) areaTag += ` data-condition-val="${hotspot.conditionValue.replace(/"/g, '&quot;')}"`;
+                    }
                 } else if (hotspot.type === 'setter') {
                     if (hotspot.value) areaTag += ` data-setter="${hotspot.value.replace(/"/g, '&quot;')}"`;
                     if (hotspot.titleTextSetter) areaTag += ` title="${hotspot.titleTextSetter.replace(/"/g, '&quot;')}"`;
                     if (hotspot.soundSetter) areaTag += ` data-sound="${hotspot.soundSetter.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.infoTextSetter) areaTag += ` data_info="${hotspot.infoTextSetter.replace(/"/g, '&quot;').replace(/\n/g, '<br>')}"`;
+                    if (hotspot.infoTextSetter) areaTag += ` data-info-harlowe="${hotspot.infoTextSetter.replace(/"/g, '&quot;')}"`;
                 }
                 areaTag += '>\n';
                 twineCode += areaTag;
             });
             twineCode += '    </map>\n';
-            twineCode += `    <div id="${window.TWINE_IMAGE_INFO_DISPLAY_ID || 'twineImageInfoDisplay'}" style="display: none;"></div>\n`;
+            twineCode += `    <div id="twineImageInfoDisplay" style="display: none;">(live: 0.1s)[(print: $tempInfoDisplay)]</div>\n`;
             twineCode += '</div>\n\n';
-            // --- INICI DELS ENLLAÇOS HARLOWE OCULTS ---
-            twineCode += '<span id="Ocult" style="display:none;">\n';
+
+            // Generate Harlowe links for passages and setters
+            twineCode += '(live: 0.1s)[\n';
+            twineCode += '    <span id="Ocult" style="display:none;">\n';
             hotspots.forEach(hotspot => {
                 if (hotspot.type === 'passage' && hotspot.value) {
                     const passageNameForLink = hotspot.value.replace(/"/g, '\\"');
-                
-                    const harloweLink = `    (link: "${passageNameForLink}")[(goto: "${passageNameForLink}")]`;
-                    twineCode += `${harloweLink}\n`; 
+                    let harloweLink = '';
+
+                    if (hotspot.hasCondition && hotspot.conditionVariable && hotspot.conditionValue) {
+                        let conditionValueFormatted = hotspot.conditionValue;
+                        if (isNaN(hotspot.conditionValue) || hotspot.conditionValue.trim() === '') {
+                            conditionValueFormatted = `"${hotspot.conditionValue.replace(/"/g, '\\"')}"`;
+                        }
+                        harloweLink = `    (if: ${hotspot.conditionVariable} is ${conditionValueFormatted})[(link: "${passageNameForLink}")[(goto: "${passageNameForLink}")]]`;
+                    } else {
+                        harloweLink = `    (link: "${passageNameForLink}")[(goto: "${passageNameForLink}")]`;
+                    }
+                    twineCode += `${harloweLink}\n`;
+                } else if (hotspot.type === 'setter' && hotspot.value) {
+                    const setterCodeForLink = hotspot.value.replace(/"/g, '\\"');
+                    twineCode += `    (link: "setter_hotspot_${hotspot.id}")[(set: ${setterCodeForLink})]\n`;
                 }
             });
-            twineCode += '</span>';
+            twineCode += '    </span>\n';
+            twineCode += ']\n';
 
             outputCode.value = twineCode;
         }
 
+        // Event listener for copy code button
         copyCodeButton.addEventListener('click', () => {
-            outputCode.select();
-            document.execCommand('copy');
-            copyFeedback.classList.add('show'); 
+            outputCode.select(); // Select the text in the textarea
+            document.execCommand('copy'); // Copy to clipboard
+            copyFeedback.classList.add('show'); // Show feedback message
         });
 
-        // Nou event listener per al botó de càrrega
+        // Event listener for load code button
         loadCodeButton.addEventListener('click', () => {
-            hideCopyFeedback();
+            hideCopyFeedback(); // Hide feedback on load
             const codeToParse = outputCode.value;
             if (codeToParse.trim() === "") {
                 alert("El camp de codi està buit. Enganxa el codi HTML/Harlowe per carregar.");
@@ -572,53 +695,22 @@
             parseTwineCode(codeToParse);
         });
 
+        // Function to parse existing Twine code and populate the editor
         function parseTwineCode(code) {
             const parser = new DOMParser();
-            const doc = parser.parseFromString(code, 'text/html');
+            let tempDiv = document.createElement('div');
+            tempDiv.innerHTML = code; // Parse the HTML string
 
-            const imgElement = doc.querySelector('.twine-image-wrapper img');
+            const imgElement = tempDiv.querySelector('.twine-image-wrapper img');
             if (!imgElement) {
                 alert("No s'ha trobat cap etiqueta <img> amb usemap dins de .twine-image-wrapper.");
                 return;
             }
 
-            const imgSrc = imgElement.getAttribute('src');
-            if (!imgSrc) {
-                alert("La imatge no té un atribut 'src'.");
-                return;
-            }
-
-            // Actualitzar el camp de selecció de fitxer per mostrar el nom del fitxer
-            // Això només actualitza el nom visible, no carrega el fitxer realment.
-            const fileName = imgSrc.split('/').pop();
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(new File([], fileName)); // Crea un fitxer "buit" amb el nom
-            imageUpload.files = dataTransfer.files;
-
-            // No donem cap avís. Simplement intentem treballar amb la imatge actual.
-            // Si no hi ha imatge o les dimensions no són vàlides, renderHotspots ja ho gestiona.
-            
-            // Si la imatge actualment visible a l'editor no coincideix amb la del codi,
-            // els hotspots es visualitzaran de forma incorrecta.
-            // No hi haurà cap alerta per informar d'aquesta possible discrepància.
-            if (imageDisplay.src && imageDisplay.naturalWidth && imageDisplay.naturalHeight) {
-                // Si ja hi ha una imatge, podem ajustar l'editor a la seva mida.
-                const extraSpace = 80; 
-                imageEditor.style.minHeight = imageDisplay.offsetHeight + extraSpace + 'px';
-                imageEditor.style.height = imageDisplay.offsetHeight + extraSpace + 'px';
-            } else {
-                // Si no hi ha imatge carregada, assegurem-nos que l'editor torni al seu estat inicial
-                imageDisplay.style.display = 'none';
-                drawingInstructions.style.display = 'block';
-                editorImageInfoDisplay.style.display = 'none';
-                imageEditor.style.height = 'auto';
-                imageEditor.style.minHeight = '400px';
-            }
-
-            hotspots = []; // Netejar els hotspots existents abans de carregar
+            // Reset hotspots and counter
+            hotspots = [];
             let maxHotspotId = 0;
-
-            const areaElements = doc.querySelectorAll('map[name="hotspotmap"] area');
+            const areaElements = tempDiv.querySelectorAll('map[name="hotspotmap"] area');
             areaElements.forEach(area => {
                 const coords = area.getAttribute('coords');
                 const altText = area.getAttribute('alt');
@@ -626,50 +718,61 @@
                 const dataSetter = area.getAttribute('data-setter');
                 const title = area.getAttribute('title');
                 const dataSound = area.getAttribute('data-sound');
-                const dataInfo = area.getAttribute('data_info');
+                // NEW: Read the new data-info-harlowe attribute
+                const dataInfoHarlowe = area.getAttribute('data-info-harlowe');
 
-                hotspotIdCounter++; // Incrementar per a cada nou hotspot
-                maxHotspotId = Math.max(maxHotspotId, hotspotIdCounter); // Mantenir el màxim ID
+                const dataConditionVar = area.getAttribute('data-condition-var');
+                const dataConditionVal = area.getAttribute('data-condition-val');
+
+                hotspotIdCounter++;
+                maxHotspotId = Math.max(maxHotspotId, hotspotIdCounter);
 
                 let newHotspot = {
                     id: hotspotIdCounter,
                     coords: coords,
                     name: altText || `Hotspot ${hotspotIdCounter}`,
-                    type: 'passage', // Default
+                    type: 'passage',
                     value: '',
                     titleText: '',
                     sound: '',
-                    infoText: '',
+                    infoText: '', // This field will now store the Harlowe text
                     titleTextSetter: '',
                     soundSetter: '',
-                    infoTextSetter: ''
+                    infoTextSetter: '', // This field will now store the Harlowe text
+                    hasCondition: false,
+                    conditionVariable: '',
+                    conditionValue: ''
                 };
-
                 if (dataPassage) {
                     newHotspot.type = 'passage';
                     newHotspot.value = dataPassage;
                     newHotspot.titleText = title || '';
                     newHotspot.sound = dataSound || '';
-                    newHotspot.infoText = dataInfo ? dataInfo.replace(/<br>/g, '\n') : '';
+                    // NEW: Load data-info-harlowe
+                    newHotspot.infoText = dataInfoHarlowe || ''; // Assign directly
+                    newHotspot.hasCondition = !!dataConditionVar; // If variable exists, condition is true
+                    newHotspot.conditionVariable = dataConditionVar || '';
+                    newHotspot.conditionValue = dataConditionVal || '';
                 } else if (dataSetter) {
                     newHotspot.type = 'setter';
                     newHotspot.value = dataSetter;
                     newHotspot.titleTextSetter = title || '';
                     newHotspot.soundSetter = dataSound || '';
-                    newHotspot.infoTextSetter = dataInfo ? dataInfo.replace(/<br>/g, '\n') : '';
+                    // NEW: Load data-info-harlowe
+                    newHotspot.infoTextSetter = dataInfoHarlowe || ''; // Assign directly
                 }
                 hotspots.push(newHotspot);
             });
-            hotspotIdCounter = maxHotspotId; // Reinicialitzar el comptador d'ID amb el valor màxim trobat
+            hotspotIdCounter = maxHotspotId; // Set counter to the max ID found
 
             renderHotspots();
             generateTwineCode();
         }
-        
-        // Initialize display
+
+        // Initial rendering and code generation on page load
         renderHotspots();
         generateTwineCode();
-        // Optional: Recalculate hotspot positions on window resize
+        // Add event listener for window resize to re-render hotspots
         window.addEventListener('resize', renderHotspots);
     </script>
 </body>
