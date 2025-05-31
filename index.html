@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
@@ -65,8 +65,9 @@
             font-weight: bold;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
             font-size: 14px;
-            overflow: hidden;
+            /* Removed overflow: hidden; to allow delete button to be fully visible */
             box-sizing: border-box;
+            z-index: 5; /* Base z-index for the hotspot area */
         }
         .hotspot-name-display {
             position: absolute;
@@ -78,6 +79,7 @@
             border-radius: 3px;
             white-space: nowrap;
             pointer-events: none; /* Permet el clic a través del nom */
+            z-index: 15; /* Higher z-index to be above the hotspot area */
         }
         .hotspot-area:hover {
             background-color: rgba(0, 123, 255, 0.4);
@@ -169,7 +171,7 @@
             font-size: 12px;
             cursor: pointer;
             box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-            z-index: 10; /* Per assegurar que es vegi sobre el hotspot */
+            z-index: 20; /* Even higher z-index to be above name display */
         }
         .hotspot-delete-button-visual:hover {
             background-color: #c82333;
