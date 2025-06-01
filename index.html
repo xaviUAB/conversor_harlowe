@@ -613,7 +613,17 @@
                         <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleTextSetter" value="${hotspot.titleTextSetter || ''}">
                         <label>So (nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="soundSetter" value="${hotspot.soundSetter || ''}">
                         <label>Info Textual (sota imatge - suporta Harlowe):</label><textarea data-field="infoTextSetter">${hotspot.infoTextSetter || ''}</textarea>
-                        <label class="text-alternatiu-label">Text alternatiu (sota imatge - suporta Harlowe):</label><textarea data-field="infoTextSetter2">${hotspot.infoTextSetter2 || ''}</textarea>
+                        <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoTextSetter2">${hotspot.infoTextSetter2 || ''}</textarea>
+                        
+                        <div class="condition-label-container">
+                            <label>Condició:</label>
+                            <input type="checkbox" data-field="hasCondition" ${hotspot.hasCondition ? 'checked' : ''}>
+                        </div>
+                        <div class="condition-fields ${hotspot.hasCondition ? '' : 'hidden-field'}">
+                            <label>Variable (Condició):</label><input type="text" data-field="conditionVariable" value="${hotspot.conditionVariable || ''}" placeholder="Ex: $clau">
+                            <label>Valor (Condició):</label><input type="text" data-field="conditionValue" value="${hotspot.conditionValue || ''}" placeholder="Ex: true o 1">
+                            <label>Text de condició no assolida:</label><textarea data-field="failInfo">${hotspot.failInfo || ''}</textarea>
+                        </div>
                     </div>
 
                     <div class="hotspot-section passage-specific-fields ${hotspot.type==='passage'?'':'hidden-field'}">
@@ -678,15 +688,16 @@
                     pFields.classList.toggle('hidden-field', type !== 'passage');
                     sFields.classList.toggle('hidden-field', type !== 'setter');
                     
-                    const isPassageType = type === 'passage';
-                    conditionLabelContainer.classList.toggle('hidden-field', !isPassageType);
-                    if (!isPassageType) {
-                        conditionFields.classList.add('hidden-field');
-                        hasConditionCheckbox.checked = false;
-                        hotspot.hasCondition = false;
-                    } else {
-                        conditionFields.classList.toggle('hidden-field', !hotspot.hasCondition);
-                    }
+                    // Condition fields are now always present in both types, their visibility depends only on hasCondition
+                    // conditionLabelContainer.classList.toggle('hidden-field', !isPassageType); // Removed this line
+                    // if (!isPassageType) { // Removed this block
+                    //     conditionFields.classList.add('hidden-field');
+                    //     hasConditionCheckbox.checked = false;
+                    //     hotspot.hasCondition = false;
+                    // } else {
+                    //     conditionFields.classList.toggle('hidden-field', !hotspot.hasCondition);
+                    // }
+                    conditionFields.classList.toggle('hidden-field', !hasConditionCheckbox.checked);
                 };
 
                 toggle(hotspot.type); // Initial toggle based on current type
@@ -712,7 +723,7 @@
                 });
                 
                 // Update event listeners for 'value' (passage) and 'variable', 'valor' (setter)
-                ['value', 'titleText','sound','infoText', 'transition', 'failInfo'].forEach(f => { // Added 'transition' and 'failInfo'
+                ['value', 'titleText','sound','infoText', 'transition'].forEach(f => {
                     const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -734,6 +745,7 @@
                     }
                 });
 
+                // Condition fields listeners (now applies to both types)
                 hasConditionCheckbox.addEventListener('change', e => {
                     hotspot.hasCondition = e.target.checked;
                     conditionFields.classList.toggle('hidden-field', !hotspot.hasCondition);
@@ -741,8 +753,8 @@
                     hideCopyFeedback();
                 });
 
-                ['conditionVariable', 'conditionValue'].forEach(f => {
-                    const element = item.querySelector(`input[data-field="${f}"]`);
+                ['conditionVariable', 'conditionValue', 'failInfo'].forEach(f => { // Added 'failInfo' here
+                    const element = item.querySelector(`[data-field="${f}"]`); // Select from anywhere within the item
                     if (element) {
                         element.addEventListener('input', e => {
                             hotspot[f] = e.target.value;
@@ -787,19 +799,21 @@
 
                 const altText = (hotspot.name || `Hotspot ${hotspot.id}`).replace(/"/g, '&quot;');
                 let areaTag = `        <area shape="rect" coords="${coords}" alt="${altText}" class="hotspot-item"`;
+                
+                // Common attributes for both types if they have conditions
+                if (hotspot.hasCondition) {
+                    if (hotspot.conditionVariable) areaTag += ` data-condition-var="${hotspot.conditionVariable.replace(/"/g, '&quot;')}"`;
+                    if (hotspot.conditionValue) areaTag += ` data-condition-val="${hotspot.conditionValue.replace(/"/g, '&quot;')}"`;
+                    if (hotspot.failInfo) areaTag += ` data-fail-info="${hotspot.failInfo.replace(/"/g, '&quot;')}"`;
+                }
+
                 if (hotspot.type === 'passage') {
                     if (hotspot.value) areaTag += ` data-passage="${hotspot.value.replace(/"/g, '&quot;')}"`;
                     if (hotspot.titleText) areaTag += ` title="${hotspot.titleText.replace(/"/g, '&quot;')}"`;
                     if (hotspot.sound) areaTag += ` data-sound="${hotspot.sound.replace(/"/g, '&quot;')}"`;
                     if (hotspot.infoText) areaTag += ` data_info="${hotspot.infoText.replace(/"/g, '&quot;')}"`;
-                    // Changed 'transicio' to 'data-transition-depart' for the area tag
                     if (hotspot.transition) areaTag += ` data-transition-depart="${hotspot.transition.replace(/"/g, '&quot;')}"`; 
 
-                    if (hotspot.hasCondition) {
-                        if (hotspot.conditionVariable) areaTag += ` data-condition-var="${hotspot.conditionVariable.replace(/"/g, '&quot;')}"`;
-                        if (hotspot.conditionValue) areaTag += ` data-condition-val="${hotspot.conditionValue.replace(/"/g, '&quot;')}"`;
-                        if (hotspot.failInfo) areaTag += ` data-fail-info="${hotspot.failInfo.replace(/"/g, '&quot;')}"`; // New attribute
-                    }
                 } else if (hotspot.type === 'setter') {
                     let setMacroContent = '';
                     const valorRaw = hotspot.valor;
@@ -968,6 +982,13 @@
                     conditionVariable: '',
                     conditionValue: ''
                 };
+                
+                // Common condition parsing for both types
+                newHotspot.hasCondition = !!dataConditionVar;
+                newHotspot.conditionVariable = dataConditionVar || '';
+                newHotspot.conditionValue = dataConditionVal || '';
+                newHotspot.failInfo = dataFailInfo || '';
+
                 if (dataPassage) {
                     newHotspot.type = 'passage';
                     newHotspot.value = dataPassage;
@@ -975,10 +996,6 @@
                     newHotspot.sound = dataSound || '';
                     newHotspot.infoText = dataInfo || '';
                     newHotspot.transition = dataTransition || ''; // NEW: Assign transition
-                    newHotspot.hasCondition = !!dataConditionVar;
-                    newHotspot.conditionVariable = dataConditionVar || '';
-                    newHotspot.conditionValue = dataConditionVal || '';
-                    newHotspot.failInfo = dataFailInfo || ''; // Load new attribute
                 } else if (dataSetter) { // If data-setter exists, it's a setter type
                     newHotspot.type = 'setter';
                     // Load variable and valor from new dedicated attributes (they are now stored raw)
@@ -1013,7 +1030,7 @@
                 const dataConditionVar = e.target.getAttribute('data-condition-var');
                 const dataConditionVal = e.target.getAttribute('data-condition-val');
                 const dataFailInfo = e.target.getAttribute('data-fail-info'); // Obtenir la informació de fallada
-                // Removed dataTransition as it's not directly used here for triggering
+                const dataTransition = e.target.getAttribute('data-transition-depart'); // Get transition for passage type
 
                 const twineInfoDisplay = document.getElementById('twineImageInfoDisplay');
 
@@ -1022,90 +1039,91 @@
                     window.hal.tracks[dataSound].play();
                 }
 
-                // Determinar l'acció en funció del tipus de hotspot
-                if (e.target.hasAttribute('data-passage')) {
-                    let conditionMet = true;
-                    const hasCondition = e.target.hasAttribute('data-condition-var') && e.target.hasAttribute('data-condition-val');
+                let conditionMet = true;
+                const hasCondition = e.target.hasAttribute('data-condition-var') && e.target.hasAttribute('data-condition-val');
 
-                    if (hasCondition) {
-                        const conditionVar = e.target.getAttribute('data-condition-var');
-                        const conditionVal = e.target.getAttribute('data-condition-val');
-                        
-                        const actualVariableValue = window.Harlowe.get(conditionVar);
-                        let expectedConditionValue;
+                if (hasCondition) {
+                    const conditionVar = e.target.getAttribute('data-condition-var');
+                    const conditionVal = e.target.getAttribute('data-condition-val');
+                    
+                    const actualVariableValue = window.Harlowe.get(conditionVar);
+                    let expectedConditionValue;
 
-                        // Intentar analitzar el valor esperat com a booleà primer
-                        if (conditionVal.toLowerCase() === 'true') {
-                            expectedConditionValue = true;
-                        } else if (conditionVal.toLowerCase() === 'false') {
-                            expectedConditionValue = false;
-                        }
-                        // Intentar analitzar com a número
-                        else if (!isNaN(conditionVal) && conditionVal.trim() !== '') {
-                            expectedConditionValue = Number(conditionVal);
+                    // Intentar analitzar el valor esperat com a booleà primer
+                    if (conditionVal.toLowerCase() === 'true') {
+                        expectedConditionValue = true;
+                    } else if (conditionVal.toLowerCase() === 'false') {
+                        expectedConditionValue = false;
+                    }
+                    // Intentar analitzar com a número
+                    else if (!isNaN(conditionVal) && conditionVal.trim() !== '') {
+                        expectedConditionValue = Number(conditionVal);
+                    } else {
+                        // Si és una cadena, eliminar les cometes externes si existeixen
+                        if (conditionVal.startsWith('"') && conditionVal.endsWith('"') && conditionVal.length > 1) {
+                            expectedConditionValue = conditionVal.substring(1, conditionVal.length - 1);
                         } else {
-                            // Si és una cadena, eliminar les cometes externes si existeixen
-                            if (conditionVal.startsWith('"') && conditionVal.endsWith('"') && conditionVal.length > 1) {
-                                expectedConditionValue = conditionVal.substring(1, conditionVal.length - 1);
-                            } else {
-                                expectedConditionValue = conditionVal;
-                            }
+                            expectedConditionValue = conditionVal;
                         }
-                        
-                        // Determinar el tipus per a la comparació
-                        let compareVariableValue = actualVariableValue;
-                        let compareExpectedValue = expectedConditionValue;
+                    }
+                    
+                    // Determinar el tipus per a la comparació
+                    let compareVariableValue = actualVariableValue;
+                    let compareExpectedValue = expectedConditionValue;
 
-                        // Convertir explícitament per a la comparació si els tipus són mixts però els valors són numèricament compatibles
-                        if (typeof actualVariableValue === 'number' && typeof expectedConditionValue === 'string' && !isNaN(expectedConditionValue)) {
-                            compareExpectedValue = Number(expectedConditionValue);
-                        } else if (typeof actualVariableValue === 'string' && typeof expectedConditionValue === 'number' && !isNaN(actualVariableValue)) {
-                            compareVariableValue = Number(actualVariableValue);
-                        }
-
-                        conditionMet = (compareVariableValue === compareExpectedValue);
+                    // Convertir explícitament per a la comparació si els tipus són mixts però els valors són numèricament compatibles
+                    if (typeof actualVariableValue === 'number' && typeof expectedConditionValue === 'string' && !isNaN(expectedConditionValue)) {
+                        compareExpectedValue = Number(expectedConditionValue);
+                    } else if (typeof actualVariableValue === 'string' && typeof expectedConditionValue === 'number' && !isNaN(actualVariableValue)) {
+                        compareVariableValue = Number(actualVariableValue);
                     }
 
-                    if (conditionMet) {
-                        // Procedir al passatge
-                        const linksInOcult = document.querySelectorAll('#Ocult a');
-                        let foundLink = null;
-                        // Find the link whose text content matches the hotspot's data-passage value
-                        const targetPassageValue = e.target.getAttribute('data-passage');
-                        for (let i = 0; i < linksInOcult.length; i++) {
-                            // The text content of the hidden Harlowe link is the passage name
-                            if (linksInOcult[i].textContent.trim() === targetPassageValue) {
-                                foundLink = linksInOcult[i];
-                                break;
-                            }
-                        }
-                        if (foundLink) {
-                            foundLink.click(); // Fer clic programàticament a l'enllaç Harlowe ocult
-                            // Establir el text d'informació si la condició es compleix
-                            if (twineInfoDisplay) {
-                                if (dataInfo) {
-                                    window.Harlowe.set('$tempInfoDisplay', dataInfo);
-                                    twineInfoDisplay.style.display = 'block';
-                                } else {
-                                    twineInfoDisplay.style.display = 'none';
-                                    window.Harlowe.set('$tempInfoDisplay', '');
-                                }
-                            }
+                    conditionMet = (compareVariableValue === compareExpectedValue);
+                }
+
+                if (!conditionMet) {
+                    // Condició no complerta, mostrar informació de fallada i no executar l'acció
+                    if (twineInfoDisplay) {
+                        if (dataFailInfo) {
+                            window.Harlowe.set('$tempInfoDisplay', dataFailInfo);
+                            twineInfoDisplay.style.display = 'block';
                         } else {
-                            console.warn(`No s'ha trobat el link de Harlowe ocult per al hotspot de passatge: ${hotspotName}. Buscat: ${targetPassageValue}`);
+                            twineInfoDisplay.style.display = 'none';
+                            window.Harlowe.set('$tempInfoDisplay', ''); // Netejar la visualització si no hi ha informació de fallada
                         }
-                    } else {
-                        // Condició no complerta, mostrar informació de fallada
+                    }
+                    console.log(`Condició no assolida per al hotspot: ${hotspotName}`);
+                    return; // Stop execution if condition not met
+                }
+
+                // Proceed with action only if condition is met (or no condition exists)
+                if (e.target.hasAttribute('data-passage')) {
+                    // Procedir al passatge
+                    const linksInOcult = document.querySelectorAll('#Ocult a');
+                    let foundLink = null;
+                    // Find the link whose text content matches the hotspot's data-passage value
+                    const targetPassageValue = e.target.getAttribute('data-passage');
+                    for (let i = 0; i < linksInOcult.length; i++) {
+                        // The text content of the hidden Harlowe link is the passage name
+                        if (linksInOcult[i].textContent.trim() === targetPassageValue) {
+                            foundLink = linksInOcult[i];
+                            break;
+                        }
+                    }
+                    if (foundLink) {
+                        foundLink.click(); // Fer clic programàticament a l'enllaç Harlowe ocult
+                        // Establir el text d'informació si la condició es compleix
                         if (twineInfoDisplay) {
-                            if (dataFailInfo) {
-                                window.Harlowe.set('$tempInfoDisplay', dataFailInfo);
+                            if (dataInfo) {
+                                window.Harlowe.set('$tempInfoDisplay', dataInfo);
                                 twineInfoDisplay.style.display = 'block';
                             } else {
                                 twineInfoDisplay.style.display = 'none';
-                                window.Harlowe.set('$tempInfoDisplay', ''); // Netejar la visualització si no hi ha informació de fallada
+                                window.Harlowe.set('$tempInfoDisplay', '');
                             }
                         }
-                        console.log(`Condició no assolida per al hotspot: ${hotspotName}`);
+                    } else {
+                        console.warn(`No s'ha trobat el link de Harlowe ocult per al hotspot de passatge: ${hotspotName}. Buscat: ${targetPassageValue}`);
                     }
                 } else if (e.target.hasAttribute('data_variable') && e.target.hasAttribute('data_valor')) {
                     // Aquest és un setter, utilitzar directament window.Harlowe.set()
