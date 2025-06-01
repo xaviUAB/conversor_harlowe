@@ -175,7 +175,7 @@
             font-size: 12px;
             cursor: pointer;
             box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-            z-index: 20; /* Even higher z-index to be above name display */
+            z-index: 20; /* Even higher z-index to be above the hotspot area */
         }
         .hotspot-delete-button-visual:hover {
             background-color: #c82333;
@@ -468,6 +468,7 @@
                         titleText: '',
                         sound: '',
                         infoText: '', // This field will now store the Harlowe text
+                        transition: '', // NEW: For passage transition
                         variable: '', // New field for setter variable name
                         valor: '', // New field for setter variable value
                         titleTextSetter: '',
@@ -600,22 +601,14 @@
                 item.classList.add('hotspot-item');
                 item.dataset.hotspotId = hotspot.id;
 
-                // Determine placeholder and label text based on hotspot type
-                const valueLabelText = hotspot.type === 'passage'
-                    ? 'Passatge destí:'
-                    : 'Nom de la variable (ex: $nom_variable):'; // Updated label
-                const valuePlaceholderText = hotspot.type === 'passage'
-                    ? 'Ex: Bosc'
-                    : 'Ex: $punts'; // Updated placeholder for variable
-
                 item.innerHTML = `
                     <div class="hotspot-section general-settings">
                         <label>Nom Hotspot:</label><input type="text" data-field="name" value="${hotspot.name || ''}" placeholder="Ex: Porta">
                         <label>Acció:</label><select data-field="type"><option value="passage" ${hotspot.type==='passage'?'selected':''}>Anar Passatge</option><option value="setter" ${hotspot.type==='setter'?'selected':''}>Canviar Variable</option></select>
-                        <label class="value-label">${valueLabelText}</label><input type="text" data-field="variable" value="${hotspot.variable || ''}" placeholder="${valuePlaceholderText}">
                     </div>
                     
                     <div class="hotspot-section setter-specific-fields ${hotspot.type==='setter'?'':'hidden-field'}">
+                        <label>Nom de la variable (ex: $nom_variable):</label><input type="text" data-field="variable" value="${hotspot.variable || ''}" placeholder="Ex: $punts">
                         <label>Valor de la variable (Número o text. Es pot sumar. Ex: +=100):</label><input type="text" data-field="valor" value="${hotspot.valor || ''}" placeholder="Ex: 1000 o &quot;text&quot;">
                         <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleTextSetter" value="${hotspot.titleTextSetter || ''}">
                         <label>So (nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="soundSetter" value="${hotspot.soundSetter || ''}">
@@ -624,6 +617,29 @@
                     </div>
 
                     <div class="hotspot-section passage-specific-fields ${hotspot.type==='passage'?'':'hidden-field'}">
+                        <label>Passatge destí:</label><input type="text" data-field="value" value="${hotspot.value || ''}" placeholder="Ex: Bosc">
+                        
+                        <label>Transició (al canviar de passatge):</label>
+                        <select data-field="transition">
+                            <option value="">Cap</option>
+                            <option value="instant" ${hotspot.transition==='instant'?'selected':''}>Instantani</option>
+                            <option value="dissolve" ${hotspot.transition==='dissolve'?'selected':''}>Dissoldre</option>
+                            <option value="fade" ${hotspot.transition==='fade'?'selected':''}>Esvaïment</option>
+                            <option value="rumble" ${hotspot.transition==='rumble'?'selected':''}>Tremolor</option>
+                            <option value="shudder" ${hotspot.transition==='shudder'?'selected':''}>Estremiment</option>
+                            <option value="pulse" ${hotspot.transition==='pulse'?'selected':''}>Pulsació</option>
+                            <option value="zoom" ${hotspot.transition==='zoom'?'selected':''}>Zoom</option>
+                            <option value="flicker" ${hotspot.transition==='flicker'?'selected':''}>Parpelleig</option>
+                            <option value="slide-left" ${hotspot.transition==='slide-left'?'selected':''}>Lliscar Esquerra</option>
+                            <option value="slide-right" ${hotspot.transition==='slide-right'?'selected':''}>Lliscar Dreta</option>
+                            <option value="slide-up" ${hotspot.transition==='slide-up'?'selected':''}>Lliscar Amunt</option>
+                            <option value="slide-down" ${hotspot.transition==='slide-down'?'selected':''}>Lliscar Avall</option>
+                            <option value="fade-left" ${hotspot.transition==='fade-left'?'selected':''}>Esvaïment Esquerra</option>
+                            <option value="fade-right" ${hotspot.transition==='fade-right'?'selected':''}>Esvaïment Dreta</option>
+                            <option value="fade-up" ${hotspot.transition==='fade-up'?'selected':''}>Esvaïment Amunt</option>
+                            <option value="fade-down" ${hotspot.transition==='fade-down'?'selected':''}>Esvaïment Avall</option>
+                        </select>
+
                         <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleText" value="${hotspot.titleText || ''}">
                         <label>So (nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="sound" value="${hotspot.sound || ''}">
                         <label>Info Textual (sota imatge - suporta Harlowe):</label><textarea data-field="infoText">${hotspot.infoText || ''}</textarea>
@@ -644,9 +660,9 @@
 
                 const pFields = item.querySelector('.passage-specific-fields');
                 const sFields = item.querySelector('.setter-specific-fields');
-                const vLabel = item.querySelector('.value-label');
-                const variableInput = item.querySelector('input[data-field="variable"]'); // Changed from value
-                const valorInput = item.querySelector('input[data-field="valor"]'); // New field
+                // Removed vLabel and variableInput from general settings
+                const valorInput = item.querySelector('input[data-field="valor"]'); // New field for setter value
+                const variableInputSetter = item.querySelector('.setter-specific-fields input[data-field="variable"]'); // Get variable input for setter
 
                 const hasConditionCheckbox = item.querySelector('input[data-field="hasCondition"]');
                 const conditionFields = item.querySelector('.condition-fields');
@@ -654,6 +670,7 @@
                 const deleteConfigButton = item.querySelector('.delete-config-button');
                 const infoTextSetter2Field = item.querySelector('textarea[data-field="infoTextSetter2"]');
                 const textAlternatiuLabel = item.querySelector('.text-alternatiu-label');
+                const transitionSelect = item.querySelector('select[data-field="transition"]');
 
 
                 // Function to toggle visibility of fields based on hotspot type
@@ -661,10 +678,6 @@
                     pFields.classList.toggle('hidden-field', type !== 'passage');
                     sFields.classList.toggle('hidden-field', type !== 'setter');
                     
-                    // Update label and placeholder for the main value/variable input
-                    vLabel.textContent = type === 'passage' ? 'Passatge destí:' : 'Nom de la variable (ex: $nom_variable):';
-                    variableInput.placeholder = type === 'passage' ? 'Ex: Bosc' : 'Ex: $punts';
-
                     const isPassageType = type === 'passage';
                     conditionLabelContainer.classList.toggle('hidden-field', !isPassageType);
                     if (!isPassageType) {
@@ -674,9 +687,6 @@
                     } else {
                         conditionFields.classList.toggle('hidden-field', !hotspot.hasCondition);
                     }
-                    // Toggle visibility of setter-specific fields
-                    const isSetterType = type === 'setter';
-                    sFields.classList.toggle('hidden-field', !isSetterType);
                 };
 
                 toggle(hotspot.type); // Initial toggle based on current type
@@ -688,6 +698,7 @@
                     hideCopyFeedback();
                     const hotspotElement = document.querySelector(`.hotspot-area[data-hotspot-id="${hotspot.id}"] .hotspot-name-display`);
                     if (hotspotElement) {
+                        hotspot.name = e.target.value; // Update the hotspot object directly
                         hotspotElement.textContent = e.target.value;
                     }
                     // Update the delete button text in the config panel as well
@@ -699,9 +710,21 @@
                     generateTwineCode();
                     hideCopyFeedback();
                 });
-                // Update event listeners for 'variable' and 'valor'
-                ['variable', 'valor', 'titleText','sound','infoText','titleTextSetter','soundSetter','infoTextSetter','infoTextSetter2', 'failInfo'].forEach(f => {
-                    const element = item.querySelector(`[data-field="${f}"]`);
+                
+                // Update event listeners for 'value' (passage) and 'variable', 'valor' (setter)
+                ['value', 'titleText','sound','infoText', 'transition', 'failInfo'].forEach(f => { // Added 'transition' and 'failInfo'
+                    const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
+                    if (element) {
+                        element.addEventListener('input', e => {
+                            hotspot[f] = e.target.value;
+                            generateTwineCode();
+                            hideCopyFeedback();
+                        });
+                    }
+                });
+
+                ['variable', 'valor', 'titleTextSetter','soundSetter','infoTextSetter','infoTextSetter2'].forEach(f => {
+                    const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
                             hotspot[f] = e.target.value;
@@ -728,6 +751,15 @@
                         });
                     }
                 });
+                
+                // Event listener for the new transition select
+                if (transitionSelect) {
+                    transitionSelect.addEventListener('change', e => {
+                        hotspot.transition = e.target.value;
+                        generateTwineCode();
+                        hideCopyFeedback();
+                    });
+                }
 
                 item.querySelector('.delete-config-button').addEventListener('click', () => { removeHotspot(hotspot.id); hideCopyFeedback(); });
             });
@@ -760,6 +792,8 @@
                     if (hotspot.titleText) areaTag += ` title="${hotspot.titleText.replace(/"/g, '&quot;')}"`;
                     if (hotspot.sound) areaTag += ` data-sound="${hotspot.sound.replace(/"/g, '&quot;')}"`;
                     if (hotspot.infoText) areaTag += ` data_info="${hotspot.infoText.replace(/"/g, '&quot;')}"`;
+                    // Changed 'transicio' to 'data-transition-depart' for the area tag
+                    if (hotspot.transition) areaTag += ` data-transition-depart="${hotspot.transition.replace(/"/g, '&quot;')}"`; 
 
                     if (hotspot.hasCondition) {
                         if (hotspot.conditionVariable) areaTag += ` data-condition-var="${hotspot.conditionVariable.replace(/"/g, '&quot;')}"`;
@@ -811,14 +845,20 @@
             twineCode += `    <div id="twineImageInfoDisplay" style="display: none;">(live: 0.1s)[(print: $tempInfoDisplay)]</div>\n`;
             twineCode += '</div>\n\n';
 
-            // Generate Harlowe links for passages (setters no longer need hidden links)
+            // Generate Harlowe links for passages
             twineCode += '(live: 0.1s)[\n';
             twineCode += '    <span id="Ocult" style="display:none;">\n';
             hotspots.forEach(hotspot => {
                 if (hotspot.type === 'passage' && hotspot.value) {
                     const passageNameForLink = hotspot.value.replace(/"/g, '\\"');
-                    let harloweLink = '';
+                    let harloweLinkContent = `(goto: "${passageNameForLink}")`;
+                    
+                    // Add transition-depart if selected and not "Cap" (None) or "instant"
+                    if (hotspot.transition && hotspot.transition !== 'Cap' && hotspot.transition !== 'instant') {
+                        harloweLinkContent = `(transition-depart: "${hotspot.transition.replace(/"/g, '\\"')}")` + harloweLinkContent;
+                    }
 
+                    let harloweLink = '';
                     if (hotspot.hasCondition && hotspot.conditionVariable && hotspot.conditionValue) {
                         let conditionValueFormatted = hotspot.conditionValue;
                         // Add 'is' for numerical conditions if no operator is present
@@ -828,13 +868,14 @@
                         } else if (isNaN(conditionValueFormatted) && !startsWithOperator && conditionValueFormatted.trim() !== '') {
                             conditionValueFormatted = `is "${conditionValueFormatted.replace(/"/g, '\\"')}"`;
                         }
-                        harloweLink = `    (if: ${hotspot.conditionVariable} ${conditionValueFormatted})[(link: "${passageNameForLink}")[(goto: "${passageNameForLink}")]]`;
+                        // Changed the link text to be the passage name
+                        harloweLink = `    (if: ${hotspot.conditionVariable} ${conditionValueFormatted})[(link: "${passageNameForLink}")[${harloweLinkContent}]]`;
                     } else {
-                        harloweLink = `    (link: "${passageNameForLink}")[(goto: "${passageNameForLink}")]`;
+                        // Changed the link text to be the passage name
+                        harloweLink = `    (link: "${passageNameForLink}")[${harloweLinkContent}]`;
                     }
                     twineCode += `${harloweLink}\n`;
                 }
-                // Removed setter link generation here
             });
             twineCode += '    </span>\n';
             twineCode += ']\n';
@@ -893,6 +934,8 @@
                 const dataInfo = area.getAttribute('data_info');
                 const dataInfo2 = area.getAttribute('data_info_2');
                 const dataFailInfo = area.getAttribute('data-fail-info'); // New attribute
+                // Changed 'transicio' to 'data-transition-depart' for loading
+                const dataTransition = area.getAttribute('data-transition-depart'); 
 
                 // New attributes for setter variable and value
                 const dataVariable = area.getAttribute('data_variable');
@@ -913,6 +956,7 @@
                     titleText: '',
                     sound: '',
                     infoText: '',
+                    transition: '', // NEW: For passage transition
                     variable: '', // For setter type
                     valor: '', // For setter type
                     titleTextSetter: '',
@@ -930,6 +974,7 @@
                     newHotspot.titleText = title || '';
                     newHotspot.sound = dataSound || '';
                     newHotspot.infoText = dataInfo || '';
+                    newHotspot.transition = dataTransition || ''; // NEW: Assign transition
                     newHotspot.hasCondition = !!dataConditionVar;
                     newHotspot.conditionVariable = dataConditionVar || '';
                     newHotspot.conditionValue = dataConditionVal || '';
@@ -958,60 +1003,85 @@
         // Add event listener for window resize to re-render hotspots
         window.addEventListener('resize', renderHotspots);
         
-        // --- NEW JAVASCRIPT FOR HOTSPOT INTERACTION ---
+        // --- JAVASCRIPT PER A LA INTERACCIÓ DEL HOTSPOT ---
         document.addEventListener('click', (e) => {
             if (e.target.tagName === 'AREA' && e.target.classList.contains('hotspot-item')) {
-                const hotspotName = e.target.getAttribute('alt'); // Get the alt text (hotspot name)
+                const hotspotName = e.target.getAttribute('alt'); // Obtenir el text alt (nom del hotspot)
                 const dataSound = e.target.getAttribute('data-sound');
                 const dataInfo = e.target.getAttribute('data_info');
                 const dataInfo2 = e.target.getAttribute('data_info_2');
                 const dataConditionVar = e.target.getAttribute('data-condition-var');
                 const dataConditionVal = e.target.getAttribute('data-condition-val');
-                const dataFailInfo = e.target.getAttribute('data-fail-info'); // Get the fail info
+                const dataFailInfo = e.target.getAttribute('data-fail-info'); // Obtenir la informació de fallada
+                // Removed dataTransition as it's not directly used here for triggering
 
                 const twineInfoDisplay = document.getElementById('twineImageInfoDisplay');
 
-                // Play sound if available (assuming hal.tracks is defined in Twine)
+                // Reproduir so si està disponible (assumint que hal.tracks està definit a Twine)
                 if (dataSound && window.hal && window.hal.tracks && window.hal.tracks[dataSound]) {
                     window.hal.tracks[dataSound].play();
                 }
 
-                // Determine action based on hotspot type
+                // Determinar l'acció en funció del tipus de hotspot
                 if (e.target.hasAttribute('data-passage')) {
                     let conditionMet = true;
-                    if (dataConditionVar && dataConditionVal) {
-                        const variableValue = window.Harlowe.get(dataConditionVar);
-                        let expectedValue = dataConditionVal.trim();
+                    const hasCondition = e.target.hasAttribute('data-condition-var') && e.target.hasAttribute('data-condition-val');
+
+                    if (hasCondition) {
+                        const conditionVar = e.target.getAttribute('data-condition-var');
+                        const conditionVal = e.target.getAttribute('data-condition-val');
                         
-                        // Basic condition evaluation (can be expanded for more complex logic)
-                        if (expectedValue.startsWith('is ')) {
-                            expectedValue = expectedValue.substring(3).trim();
-                            if (expectedValue.startsWith('"') && expectedValue.endsWith('"')) {
-                                expectedValue = expectedValue.substring(1, expectedValue.length - 1);
-                            }
-                            conditionMet = (variableValue === expectedValue);
-                        } else if (!isNaN(expectedValue) && expectedValue !== '') {
-                            conditionMet = (variableValue === Number(expectedValue));
-                        } else {
-                            // Default to direct comparison for other cases or complex expressions
-                            conditionMet = (variableValue == expectedValue); // Use == for loose comparison
+                        const actualVariableValue = window.Harlowe.get(conditionVar);
+                        let expectedConditionValue;
+
+                        // Intentar analitzar el valor esperat com a booleà primer
+                        if (conditionVal.toLowerCase() === 'true') {
+                            expectedConditionValue = true;
+                        } else if (conditionVal.toLowerCase() === 'false') {
+                            expectedConditionValue = false;
                         }
+                        // Intentar analitzar com a número
+                        else if (!isNaN(conditionVal) && conditionVal.trim() !== '') {
+                            expectedConditionValue = Number(conditionVal);
+                        } else {
+                            // Si és una cadena, eliminar les cometes externes si existeixen
+                            if (conditionVal.startsWith('"') && conditionVal.endsWith('"') && conditionVal.length > 1) {
+                                expectedConditionValue = conditionVal.substring(1, conditionVal.length - 1);
+                            } else {
+                                expectedConditionValue = conditionVal;
+                            }
+                        }
+                        
+                        // Determinar el tipus per a la comparació
+                        let compareVariableValue = actualVariableValue;
+                        let compareExpectedValue = expectedConditionValue;
+
+                        // Convertir explícitament per a la comparació si els tipus són mixts però els valors són numèricament compatibles
+                        if (typeof actualVariableValue === 'number' && typeof expectedConditionValue === 'string' && !isNaN(expectedConditionValue)) {
+                            compareExpectedValue = Number(expectedConditionValue);
+                        } else if (typeof actualVariableValue === 'string' && typeof expectedConditionValue === 'number' && !isNaN(actualVariableValue)) {
+                            compareVariableValue = Number(actualVariableValue);
+                        }
+
+                        conditionMet = (compareVariableValue === compareExpectedValue);
                     }
 
                     if (conditionMet) {
-                        // Proceed to passage
+                        // Procedir al passatge
                         const linksInOcult = document.querySelectorAll('#Ocult a');
                         let foundLink = null;
+                        // Find the link whose text content matches the hotspot's data-passage value
+                        const targetPassageValue = e.target.getAttribute('data-passage');
                         for (let i = 0; i < linksInOcult.length; i++) {
-                            // The alt text is the passage name for hidden links
-                            if (linksInOcult[i].textContent.trim() === hotspotName) {
+                            // The text content of the hidden Harlowe link is the passage name
+                            if (linksInOcult[i].textContent.trim() === targetPassageValue) {
                                 foundLink = linksInOcult[i];
                                 break;
                             }
                         }
                         if (foundLink) {
-                            foundLink.click();
-                            // Set info text if condition is met
+                            foundLink.click(); // Fer clic programàticament a l'enllaç Harlowe ocult
+                            // Establir el text d'informació si la condició es compleix
                             if (twineInfoDisplay) {
                                 if (dataInfo) {
                                     window.Harlowe.set('$tempInfoDisplay', dataInfo);
@@ -1022,23 +1092,23 @@
                                 }
                             }
                         } else {
-                            console.warn(`No s'ha trobat el link de Harlowe ocult per al hotspot de passatge: ${hotspotName}`);
+                            console.warn(`No s'ha trobat el link de Harlowe ocult per al hotspot de passatge: ${hotspotName}. Buscat: ${targetPassageValue}`);
                         }
                     } else {
-                        // Condition not met, display fail info
+                        // Condició no complerta, mostrar informació de fallada
                         if (twineInfoDisplay) {
                             if (dataFailInfo) {
                                 window.Harlowe.set('$tempInfoDisplay', dataFailInfo);
                                 twineInfoDisplay.style.display = 'block';
                             } else {
                                 twineInfoDisplay.style.display = 'none';
-                                window.Harlowe.set('$tempInfoDisplay', ''); // Clear the display if no fail info
+                                window.Harlowe.set('$tempInfoDisplay', ''); // Netejar la visualització si no hi ha informació de fallada
                             }
                         }
                         console.log(`Condició no assolida per al hotspot: ${hotspotName}`);
                     }
                 } else if (e.target.hasAttribute('data_variable') && e.target.hasAttribute('data_valor')) {
-                    // This is a setter, directly use window.Harlowe.set()
+                    // Aquest és un setter, utilitzar directament window.Harlowe.set()
                     const variableName = e.target.getAttribute('data_variable');
                     const rawValue = e.target.getAttribute('data_valor');
                     
@@ -1052,19 +1122,19 @@
                     const startsWithArithmeticOperator = arithmeticOperators.some(op => trimmedRawValue.startsWith(op));
 
                     if (startsWithArithmeticOperator) {
-                        // Handle arithmetic operations
+                        // Gestionar operacions aritmètiques
                         const operator = trimmedRawValue.charAt(0);
                         const operandStr = trimmedRawValue.substring(1).trim();
                         const operand = Number(operandStr);
 
                         if (!isNaN(operand)) {
-                            let currentValue = Number(window.Harlowe.get(variableName)); // Explicitly convert to number
+                            let currentValue = Number(window.Harlowe.get(variableName)); // Convertir explícitament a número
 
-                            // Ensure current value is a number for arithmetic operations, initialize to 0 if not
+                            // Assegurar que el valor actual sigui un número per a les operacions aritmètiques, inicialitzar a 0 si no ho és
                             if (isNaN(currentValue)) {
                                 console.warn(`La variable '${variableName}' no és un número. S'inicialitza a 0 per realitzar l'operació aritmètica.`);
-                                window.Harlowe.set(variableName, 0); // Initialize to 0
-                                currentValue = 0; // Use 0 for the current operation
+                                window.Harlowe.set(variableName, 0); // Inicialitzar a 0
+                                currentValue = 0; // Utilitzar 0 per a l'operació actual
                             }
 
                             let newValue;
@@ -1096,12 +1166,12 @@
                             console.warn(`Operand invàlid per a l'operació aritmètica: ${operandStr}`);
                         }
                     } else {
-                        // Handle direct assignment (number or string)
+                        // Gestionar l'assignació directa (número o cadena)
                         let parsedValue;
                         if (!isNaN(trimmedRawValue) && trimmedRawValue !== '') {
                             parsedValue = Number(trimmedRawValue);
                         } else {
-                            // It's a string. Check if it's explicitly quoted by the user and remove outer quotes.
+                            // És una cadena. Comprovar si està explícitament entre cometes per l'usuari i eliminar les cometes externes.
                             if (trimmedRawValue.startsWith('"') && trimmedRawValue.endsWith('"') && trimmedRawValue.length > 1) {
                                 parsedValue = trimmedRawValue.substring(1, trimmedRawValue.length - 1);
                             } else {
@@ -1112,7 +1182,7 @@
                         console.log(`Variable de Twine '${variableName}' actualitzada a:`, parsedValue);
                     }
 
-                    // Update info display for setter (existing logic)
+                    // Actualitzar la visualització d'informació per al setter (lògica existent)
                     if (twineInfoDisplay) {
                         if (dataInfo) {
                             window.Harlowe.set('$tempInfoDisplay', dataInfo);
@@ -1122,13 +1192,13 @@
                             twineInfoDisplay.style.display = 'block';
                         } else {
                             twineInfoDisplay.style.display = 'none';
-                            window.Harlowe.set('$tempInfoDisplay', ''); // Clear the display if no info
+                            window.Harlowe.set('$tempInfoDisplay', ''); // Netejar la visualització si no hi ha informació
                         }
                     }
                 }
             }
         });
-        // --- END NEW JAVASCRIPT ---
+        // --- FI DEL JAVASCRIPT ---
     </script>
 </body>
 </html>
