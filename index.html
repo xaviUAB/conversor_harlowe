@@ -101,7 +101,8 @@
         }
         .hotspot-item input[type="text"],
         .hotspot-item select,
-        .hotspot-item textarea {
+        .hotspot-item textarea,
+        .hotspot-item input[type="number"] { /* Added number type */
             width: calc(100% - 12px);
             padding: 8px;
             margin-bottom: 10px; /* Kept existing margin-bottom for input fields */
@@ -218,6 +219,12 @@
         .column .condition-label { /* Specific class for condition labels */
             color: darkred; /* Dark red for condition labels */
         }
+        .column .limit-label { /* Specific class for limit labels */
+            color: darkorange; /* Dark orange for limit labels */
+        }
+        .column .darkblue-label { /* NEW: Specific class for dark blue labels */
+            color: darkblue; /* Dark blue for the new labels */
+        }
 
         /* Styles for section separation */
         .hotspot-section {
@@ -312,6 +319,7 @@
         let currentRect = null;
         let hotspots = [];
         let hotspotIdCounter = 0;
+        let hasMovedDuringInteraction = false; // New flag to track if mouse moved during mousedown
 
         // Function to hide the "Code copied!" feedback
         function hideCopyFeedback() {
@@ -368,6 +376,8 @@
             if (imageDisplay.style.display === 'none' || !imageDisplay.src) return; // Only interact if an image is loaded
             if (e.target.classList.contains('hotspot-delete-button-visual')) return; // Ignore clicks on delete button
 
+            hasMovedDuringInteraction = false; // Reset flag at the start of a new interaction
+
             if (e.target.classList.contains('hotspot-resize-handle')) {
                 isResizing = true;
                 activeHotspotElement = e.target.parentElement; // Get the parent hotspot-area
@@ -406,6 +416,7 @@
         // Mouse move event listener for drawing, dragging, and resizing
         document.addEventListener('mousemove', (e) => {
             if (isDrawing && currentRect) {
+                hasMovedDuringInteraction = true; // Mouse moved during drawing
                 // Update dimensions of the new hotspot being drawn
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
                 let currentMouseEventX_onImage = e.clientX - imageRect.left, currentMouseEventY_onImage = e.clientY - imageRect.top;
@@ -428,6 +439,7 @@
                 currentRect.style.width = `${rWidth}px`;
                 currentRect.style.height = `${rHeight}px`;
             } else if (isDragging && activeHotspotElement) {
+                hasMovedDuringInteraction = true; // Mouse moved during dragging
                 // Update position of the dragged hotspot
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
                 let newLeftInEditor = e.clientX - editorRect.left - dragOffsetX, newTopInEditor = e.clientY - editorRect.top - dragOffsetY;
@@ -442,6 +454,7 @@
                 activeHotspotElement.style.left = `${newLeftInEditor}px`;
                 activeHotspotElement.style.top = `${newTopInEditor}px`;
             } else if (isResizing && activeHotspotElement) {
+                hasMovedDuringInteraction = true; // Mouse moved during resizing
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
                 const imageLeftInEditor = imageRect.left - editorRect.left;
                 const imageTopInEditor = imageRect.top - editorRect.top;
@@ -491,14 +504,14 @@
                         type: 'passage',
                         value: '', // For passage type
                         titleText: '',
-                        sound: '',
+                        sound: '', // Initialize sound property
                         infoText: '', // This field will now store the Harlowe text (mouse enter)
                         infoText2: '', // NEW: For passage click info text
                         transition: '', // NEW: For passage transition
                         variable: '', // New field for setter variable name
                         valor: '', // New field for setter variable value
                         titleTextSetter: '',
-                        soundSetter: '',
+                        soundSetter: '', // Initialize soundSetter property
                         infoTextSetter: '', // This field will now store the Harlowe text (mouse enter)
                         infoTextSetter2: '', // New field for alternative info text for setter (click)
                         
@@ -507,12 +520,23 @@
                         passageConditionValue: '',
                         passageFailInfo: '',
                         passageFailInfoEnter: '',
+                        passageSoundFail: '',
 
                         // Setter specific condition fields
                         setterConditionVariable: '',
                         setterConditionValue: '',
                         setterFailInfo: '',
-                        setterFailInfoEnter: ''
+                        setterFailInfoEnter: '',
+                        setterSoundFail: '',
+
+                        // Visit Limit fields (common for both types)
+                        visitLimit: '',
+                        visitLimitTextEnter: '',
+                        visitLimitTextClic: '',
+
+                        // Secondary Setter fields
+                        variable2: '',
+                        valor2: ''
                     });
                 }
                 renderHotspots();
@@ -612,6 +636,11 @@
                                 info = currentInfoText;
                             }
                         }
+
+                        // Prioritize visit limit text if limit is set and text is available
+                        if (hotspot.visitLimit && hotspot.visitLimitTextEnter) {
+                            info = hotspot.visitLimitTextEnter; // In editor, just show if present
+                        }
                         
                         if (info) {
                             editorImageInfoDisplay.innerHTML = info.replace(/\n/g, '<br>');
@@ -624,10 +653,13 @@
                     visRect.addEventListener('click', (e) => {
                         // Prevent this click from bubbling up to the document listener for Twine interaction
                         e.stopPropagation(); 
-                        const id = parseInt(e.currentTarget.dataset.hotspotId);
-                        const configElement = document.querySelector(`#hotspotsContainer .hotspot-item[data-hotspot-id="${id}"]`);
-                        if (configElement) {
-                            configElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Only scroll if no significant movement occurred during the mousedown-mouseup cycle
+                        if (!hasMovedDuringInteraction) {
+                            const id = parseInt(e.currentTarget.dataset.hotspotId);
+                            const configElement = document.querySelector(`#hotspotsContainer .hotspot-item[data-hotspot-id="${id}"]`);
+                            if (configElement) {
+                                configElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
                         }
                     });
 
@@ -671,16 +703,27 @@
                             <div class="column">
                                 <label>Nom de la variable (ex: $nom_variable):</label><input type="text" data-field="variable" value="${hotspot.variable || ''}" placeholder="Ex: $punts">
                                 <label>Valor de la variable (Número o text. Es pot sumar. Ex: +=100):</label><input type="text" data-field="valor" value="${hotspot.valor || ''}" placeholder="Ex: 1000 o &quot;text&quot;">
+                                
                                 <label>Text (mouse enter):</label><textarea data-field="infoTextSetter">${hotspot.infoTextSetter || ''}</textarea>
                                 <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoTextSetter2">${hotspot.infoTextSetter2 || ''}</textarea>
                                 <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleTextSetter" value="${hotspot.titleTextSetter || ''}">
                                 <label>So (nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="soundSetter" value="${hotspot.soundSetter || ''}">
+
+                                <!-- Secondary Setter fields moved to the end of the first column -->
+                                <label class="darkblue-label">Nom de la variable (secundària):</label><input type="text" data-field="variable2" value="${hotspot.variable2 || ''}" placeholder="Ex: $objecte_agafat">
+                                <label class="darkblue-label">Valor de la variable (secundària):</label><input type="text" data-field="valor2" value="${hotspot.valor2 || ''}" placeholder="Ex: &quot;espasa&quot;">
                             </div>
                             <div class="column condition-inputs-wrapper">
                                 <label class="condition-label">Variable (Condició):</label><input type="text" data-field="setterConditionVariable" value="${hotspot.setterConditionVariable || ''}" placeholder="Ex: $clau">
                                 <label class="condition-label">Valor (Condició):</label><input type="text" data-field="setterConditionValue" value="${hotspot.setterConditionValue || ''}" placeholder="Ex: true o 1">
                                 <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="setterFailInfoEnter">${hotspot.setterFailInfoEnter || ''}</textarea>
                                 <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="setterFailInfo">${hotspot.setterFailInfo || ''}</textarea>
+                                <label class="condition-label">So (mentre no s'assoleix la condició:)</label><input type="text" data-field="setterSoundFail" value="${hotspot.setterSoundFail || ''}" placeholder="Ex: so_fallada">
+                                
+                                <!-- Visit Limit fields for Setter -->
+                                <label class="limit-label">Límit de visites:</label><input type="number" data-field="visitLimit" value="${hotspot.visitLimit || ''}" placeholder="Ex: 3">
+                                <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${hotspot.visitLimitTextEnter || ''}</textarea>
+                                <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${hotspot.visitLimitTextClic || ''}</textarea>
                             </div>
                         </div>
                     </div>
@@ -714,12 +757,22 @@
                                 <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoText2">${hotspot.infoText2 || ''}</textarea>
                                 <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleText" value="${hotspot.titleText || ''}">
                                 <label>So (nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="sound" value="${hotspot.sound || ''}">
+
+                                <!-- NEW: Secondary Setter fields for Passage moved to the end of the first column -->
+                                <label class="darkblue-label">Nom de la variable (secundària):</label><input type="text" data-field="variable2" value="${hotspot.variable2 || ''}" placeholder="Ex: $objecte_agafat">
+                                <label class="darkblue-label">Valor de la variable (secundària):</label><input type="text" data-field="valor2" value="${hotspot.valor2 || ''}" placeholder="Ex: &quot;espasa&quot;">
                             </div>
                             <div class="column condition-inputs-wrapper">
                                 <label class="condition-label">Variable (Condició):</label><input type="text" data-field="passageConditionVariable" value="${hotspot.passageConditionVariable || ''}" placeholder="Ex: $clau">
                                 <label class="condition-label">Valor (Condició):</label><input type="text" data-field="passageConditionValue" value="${hotspot.passageConditionValue || ''}" placeholder="Ex: true o 1">
                                 <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="passageFailInfoEnter">${hotspot.passageFailInfoEnter || ''}</textarea>
                                 <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="passageFailInfo">${hotspot.passageFailInfo || ''}</textarea>
+                                <label class="condition-label">So (mentre no s'assoleix la condició:)</label><input type="text" data-field="passageSoundFail" value="${hotspot.passageSoundFail || ''}" placeholder="Ex: so_fallada">
+
+                                <!-- Visit Limit fields for Passage -->
+                                <label class="limit-label">Límit de visites:</label><input type="number" data-field="visitLimit" value="${hotspot.visitLimit || ''}" placeholder="Ex: 3">
+                                <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${hotspot.visitLimitTextEnter || ''}</textarea>
+                                <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${hotspot.visitLimitTextClic || ''}</textarea>
                             </div>
                         </div>
                     </div>
@@ -762,7 +815,7 @@
                 });
                 
                 // Update event listeners for 'value' (passage) and 'variable', 'valor' (setter)
-                ['value', 'infoText2', 'titleText','sound','infoText', 'transition'].forEach(f => { // Added infoText2
+                ['value', 'infoText2', 'titleText','sound','infoText', 'transition', 'variable2', 'valor2'].forEach(f => { // Added variable2 and valor2
                     const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -773,7 +826,7 @@
                     }
                 });
 
-                ['variable', 'valor', 'titleTextSetter','soundSetter','infoTextSetter','infoTextSetter2'].forEach(f => {
+                ['variable', 'valor', 'titleTextSetter','soundSetter','infoTextSetter','infoTextSetter2', 'variable2', 'valor2'].forEach(f => {
                     const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -785,7 +838,7 @@
                 });
 
                 // Passage-specific condition fields listeners
-                ['passageConditionVariable', 'passageConditionValue', 'passageFailInfo', 'passageFailInfoEnter'].forEach(f => {
+                ['passageConditionVariable', 'passageConditionValue', 'passageFailInfo', 'passageFailInfoEnter', 'passageSoundFail'].forEach(f => {
                     const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -797,7 +850,7 @@
                 });
 
                 // Setter-specific condition fields listeners
-                ['setterConditionVariable', 'setterConditionValue', 'setterFailInfo', 'setterFailInfoEnter'].forEach(f => {
+                ['setterConditionVariable', 'setterConditionValue', 'setterFailInfo', 'setterFailInfoEnter', 'setterSoundFail'].forEach(f => {
                     const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -817,6 +870,18 @@
                     });
                 }
 
+                // Visit Limit fields listeners (common for both types)
+                ['visitLimit', 'visitLimitTextEnter', 'visitLimitTextClic'].forEach(f => {
+                    const element = item.querySelector(`[data-field="${f}"]`); // Select by data-field directly, as they are common
+                    if (element) {
+                        element.addEventListener('input', e => {
+                            hotspot[f] = e.target.value;
+                            generateTwineCode();
+                            hideCopyFeedback();
+                        });
+                    }
+                });
+
                 item.querySelector('.delete-config-button').addEventListener('click', () => { removeHotspot(hotspot.id); hideCopyFeedback(); });
             });
         }
@@ -826,6 +891,14 @@
             hotspots = hotspots.filter(h => h.id !== id);
             renderHotspots();
             generateTwineCode();
+        }
+
+        // Helper function to ensure variable names start with '$'
+        function formatVariable(varName) {
+            if (varName && typeof varName === 'string' && !varName.startsWith('$')) {
+                return '$' + varName;
+            }
+            return varName;
         }
 
         // Function to generate Twine (Harlowe) code
@@ -842,30 +915,45 @@
                 const coords = hotspot.coords;
 
                 const altText = (hotspot.name || `Hotspot ${hotspot.id}`).replace(/"/g, '&quot;');
-                let areaTag = `        <area shape="rect" coords="${coords}" alt="${altText}" class="hotspot-item"`;
+                
+                // Add comment for each hotspot in HTML comment format
+                twineCode += `    <!-- ${hotspot.name || `Hotspot ${hotspot.id}`} -->\n`;
+                let areaTag = `        <area shape="rect"\n`;
+                areaTag += `            coords="${coords}"\n`;
+                areaTag += `            alt="${altText}"\n`;
+                areaTag += `            class="hotspot-item"\n`;
                 
                 // Condition attributes are now type-specific
                 if (hotspot.type === 'passage') {
                     if (hotspot.passageConditionVariable && hotspot.passageConditionValue) {
-                        areaTag += ` data-condition-var="${hotspot.passageConditionVariable.replace(/"/g, '&quot;')}"`;
-                        areaTag += ` data-condition-val="${hotspot.passageConditionValue.replace(/"/g, '&quot;')}"`;
-                        if (hotspot.passageFailInfo) areaTag += ` text_fail_clic="${hotspot.passageFailInfo.replace(/"/g, '&quot;')}"`;
-                        if (hotspot.passageFailInfoEnter) areaTag += ` text_fail_enter="${hotspot.passageFailInfoEnter.replace(/"/g, '&quot;')}"`;
+                        areaTag += `            data-condition-var="${formatVariable(hotspot.passageConditionVariable).replace(/"/g, '&quot;')}"\n`;
+                        areaTag += `            data-condition-val="${hotspot.passageConditionValue.replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.passageFailInfo) areaTag += `            text_fail_clic="${hotspot.passageFailInfo.replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.passageFailInfoEnter) areaTag += `            text_fail_enter="${hotspot.passageFailInfoEnter.replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.passageSoundFail) areaTag += `            data-sound-fail="${hotspot.passageSoundFail.replace(/"/g, '&quot;')}"\n`;
                     }
-                    if (hotspot.value) areaTag += ` data-passage="${hotspot.value.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.titleText) areaTag += ` title="${hotspot.titleText.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.sound) areaTag += ` data-sound="${hotspot.sound.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.infoText) areaTag += ` data_info="${hotspot.infoText.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.infoText2) areaTag += ` data_info_2="${hotspot.infoText2.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.transition) areaTag += ` data-transition-depart="${hotspot.transition.replace(/"/g, '&quot;')}"`; 
+                    // Only include data-sound if it has a value
+                    if (hotspot.sound) areaTag += `            data-sound="${hotspot.sound.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.value) areaTag += `            data-passage="${hotspot.value.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.titleText) areaTag += `            title="${hotspot.titleText.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.infoText) areaTag += `            data_info="${hotspot.infoText.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.infoText2) areaTag += `            data_info_2="${hotspot.infoText2.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.transition) areaTag += `            data-transition-depart="${hotspot.transition.replace(/"/g, '&quot;')}"\n`; 
+
+                    // Secondary Setter attributes for passage type
+                    if (hotspot.variable2) areaTag += `            data-variable-2="${formatVariable(hotspot.variable2).replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.valor2) areaTag += `            data-valor-2="${hotspot.valor2.replace(/"/g, '&quot;')}"\n`;
 
                 } else if (hotspot.type === 'setter') {
                     if (hotspot.setterConditionVariable && hotspot.setterConditionValue) {
-                        areaTag += ` data-condition-var="${hotspot.setterConditionVariable.replace(/"/g, '&quot;')}"`;
-                        areaTag += ` data-condition-val="${hotspot.setterConditionValue.replace(/"/g, '&quot;')}"`;
-                        if (hotspot.setterFailInfo) areaTag += ` text_fail_clic="${hotspot.setterFailInfo.replace(/"/g, '&quot;')}"`;
-                        if (hotspot.setterFailInfoEnter) areaTag += ` text_fail_enter="${hotspot.setterFailInfoEnter.replace(/"/g, '&quot;')}"`;
+                        areaTag += `            data-condition-var="${formatVariable(hotspot.setterConditionVariable).replace(/"/g, '&quot;')}"\n`;
+                        areaTag += `            data-condition-val="${hotspot.setterConditionValue.replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.setterFailInfo) areaTag += `            text_fail_clic="${hotspot.setterFailInfo.replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.setterFailInfoEnter) areaTag += `            text_fail_enter="${hotspot.setterFailInfoEnter.replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.setterSoundFail) areaTag += `            data-sound-fail="${hotspot.setterSoundFail.replace(/"/g, '&quot;')}"\n`;
                     }
+                    // Only include data-sound if it has a value
+                    if (hotspot.soundSetter) areaTag += `            data-sound="${hotspot.soundSetter.replace(/"/g, '&quot;')}"\n`;
                     let setMacroContent = '';
                     const valorRaw = hotspot.valor;
                     const valorTrimmed = valorRaw.trim();
@@ -873,32 +961,44 @@
                     const startsWithArithmeticOperator = arithmeticOperators.some(op => valorTrimmed.startsWith(op));
                     const hasOtherOperator = ['>', '<', 'is', '=', 'to'].some(op => valorTrimmed.startsWith(op));
 
-                    if (hotspot.variable) {
+                    const formattedVariableName = formatVariable(hotspot.variable); // Format variable name here
+
+                    if (formattedVariableName) {
                         let formattedValorForMacro = valorTrimmed;
                         
                         if (startsWithArithmeticOperator) {
-                            setMacroContent = `${hotspot.variable} ${valorTrimmed}`;
+                            setMacroContent = `${formattedVariableName} ${valorTrimmed}`;
                         } else if (!isNaN(valorTrimmed) && valorTrimmed !== '') {
-                            setMacroContent = `${hotspot.variable} = ${formattedValorForMacro}`;
+                            setMacroContent = `${formattedVariableName} = ${formattedValorForMacro}`;
                         } else {
                             if (!hasOtherOperator) {
-                                formattedValorForMacro = `"${valorTrimmed.replace(/"/g, '\\"')}"`; // Corrected variable name here
+                                formattedValorForMacro = `"${valorTrimmed.replace(/"/g, '\\"')}"`;
                             }
-                            setMacroContent = `${hotspot.variable} = ${formattedValorForMacro}`;
+                            setMacroContent = `${formattedVariableName} = ${formattedValorForMacro}`;
                         }
                     }
                     
-                    if (setMacroContent) areaTag += ` data-setter="${setMacroContent.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.titleTextSetter) areaTag += ` title="${hotspot.titleTextSetter.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.soundSetter) areaTag += ` data-sound="${hotspot.soundSetter.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.infoTextSetter) areaTag += ` data_info="${hotspot.infoTextSetter.replace(/"/g, '&quot;')}"`;
-                    if (hotspot.infoTextSetter2) areaTag += ` data_info_2="${hotspot.infoTextSetter2.replace(/"/g, '&quot;')}"`;
+                    if (setMacroContent) areaTag += `            data-setter="${setMacroContent.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.titleTextSetter) areaTag += `            title="${hotspot.titleTextSetter.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.infoTextSetter) areaTag += `            data_info="${hotspot.infoTextSetter.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.infoTextSetter2) areaTag += `            data_info_2="${hotspot.infoTextSetter2.replace(/"/g, '&quot;')}"\n`;
                     
-                    if (hotspot.variable) areaTag += ` data_variable="${hotspot.variable}"`;
-                    if (hotspot.valor) areaTag += ` data_valor="${hotspot.valor}"`;
+                    if (formattedVariableName) areaTag += `            data_variable="${formattedVariableName}"\n`;
+                    if (hotspot.valor) areaTag += `            data_valor="${hotspot.valor}"\n`;
+
+                    // Secondary Setter attributes
+                    if (hotspot.variable2) areaTag += `            data-variable-2="${formatVariable(hotspot.variable2).replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.valor2) areaTag += `            data-valor-2="${hotspot.valor2.replace(/"/g, '&quot;')}"\n`;
                 }
-                areaTag += '>\n';
+
+                // Visit Limit attributes (common for both types)
+                if (hotspot.visitLimit) areaTag += `            data-visit-limit="${hotspot.visitLimit.replace(/"/g, '&quot;')}"\n`;
+                if (hotspot.visitLimitTextEnter) areaTag += `            data-visit-limit-enter="${hotspot.visitLimitTextEnter.replace(/"/g, '&quot;')}"\n`;
+                if (hotspot.visitLimitTextClic) areaTag += `            data-visit-limit-clic="${hotspot.visitLimitTextClic.replace(/"/g, '&quot;')}"\n`;
+
+                areaTag += `        >\n`; // Close the area tag
                 twineCode += areaTag;
+                twineCode += `\n`; // Add an extra newline for separation
             });
             twineCode += '    </map>\n';
             twineCode += `    <div id="twineImageInfoDisplay" style="display: none;">(live: 0.1s)[(print: $tempInfoDisplay)]</div>\n`;
@@ -925,7 +1025,7 @@
                         } else if (isNaN(conditionValueFormatted) && !startsWithOperator && conditionValueFormatted.trim() !== '') {
                             conditionValueFormatted = `is "${conditionValueFormatted.replace(/"/g, '\\"')}"`;
                         }
-                        harloweLink = `    (if: ${hotspot.passageConditionVariable} ${conditionValueFormatted})[(link: "${passageNameForLink}")[${harloweLinkContent}]]`;
+                        harloweLink = `    (if: ${formatVariable(hotspot.passageConditionVariable)} ${conditionValueFormatted})[(link: "${passageNameForLink}")[${harloweLinkContent}]]`;
                     } else {
                         harloweLink = `    (link: "${passageNameForLink}")[${harloweLinkContent}]`;
                     }
@@ -942,7 +1042,10 @@
         copyCodeButton.addEventListener('click', () => {
             outputCode.select(); // Select the text in the textarea
             document.execCommand('copy'); // Copy to clipboard
-            copyFeedback.classList.add('show'); // Show feedback message
+            copyFeedback.style.display = 'inline-block'; // Show feedback message
+            setTimeout(() => {
+                copyFeedback.style.display = 'none'; // Hide feedback message after 2 seconds
+            }, 2000);
         });
 
         // Event listener for load code button
@@ -994,12 +1097,20 @@
                 const dataConditionVal = area.getAttribute('data-condition-val');
                 const dataFailInfoClic = area.getAttribute('text_fail_clic');
                 const dataFailInfoEnter = area.getAttribute('text_fail_enter');
+                const dataSoundFail = area.getAttribute('data-sound-fail');
                 
                 const dataTransition = area.getAttribute('data-transition-depart'); 
 
-                // New attributes for setter variable and value
+                // Retrieve visit limit attributes
+                const visitLimit = area.getAttribute('data-visit-limit');
+                const visitLimitTextEnter = area.getAttribute('data-visit-limit-enter');
+                const visitLimitTextClic = area.getAttribute('data-visit-limit-clic');
+
+                // Declare dataVariable, dataValor, dataVariable2, dataValor2 here to ensure they are always in scope
                 const dataVariable = area.getAttribute('data_variable');
                 const dataValor = area.getAttribute('data_valor');
+                const dataVariable2 = area.getAttribute('data-variable-2');
+                const dataValor2 = area.getAttribute('data-valor-2');
 
                 hotspotIdCounter++;
                 maxHotspotId = Math.max(maxHotspotId, hotspotIdCounter);
@@ -1015,8 +1126,8 @@
                     infoText: '',
                     infoText2: '',
                     transition: '',
-                    variable: '',
-                    valor: '',
+                    variable: '', // Will be assigned below
+                    valor: '',    // Will be assigned below
                     titleTextSetter: '',
                     soundSetter: '',
                     infoTextSetter: '',
@@ -1027,19 +1138,30 @@
                     passageConditionValue: '',
                     passageFailInfo: '',
                     passageFailInfoEnter: '',
+                    passageSoundFail: '',
 
                     // Setter specific condition fields
                     setterConditionVariable: '',
                     setterConditionValue: '',
                     setterFailInfo: '',
-                    setterFailInfoEnter: ''
+                    setterFailInfoEnter: '',
+                    setterSoundFail: '',
+
+                    // Visit Limit fields (common for both types)
+                    visitLimit: visitLimit || '',
+                    visitLimitTextEnter: visitLimitTextEnter || '',
+                    visitLimitTextClic: visitLimitTextClic || '',
+
+                    // Secondary Setter fields
+                    variable2: dataVariable2 || '',
+                    valor2: dataValor2 || ''
                 };
                 
                 if (dataPassage) {
                     newHotspot.type = 'passage';
                     newHotspot.value = dataPassage;
                     newHotspot.titleText = title || '';
-                    newHotspot.sound = dataSound || '';
+                    newHotspot.sound = dataSound || ''; // Assign dataSound for passage
                     newHotspot.infoText = dataInfo || '';
                     newHotspot.infoText2 = dataInfo2 || '';
                     newHotspot.transition = dataTransition || '';
@@ -1048,12 +1170,16 @@
                     newHotspot.passageConditionValue = dataConditionVal || '';
                     newHotspot.passageFailInfo = dataFailInfoClic || '';
                     newHotspot.passageFailInfoEnter = dataFailInfoEnter || '';
+                    newHotspot.passageSoundFail = dataSoundFail || '';
+                    // Assign secondary setter fields for passage type
+                    newHotspot.variable2 = dataVariable2 || '';
+                    newHotspot.valor2 = dataValor2 || '';
                 } else if (dataSetter) {
                     newHotspot.type = 'setter';
-                    newHotspot.variable = dataVariable || '';
-                    newHotspot.valor = dataValor || '';
+                    newHotspot.variable = dataVariable || ''; // Now dataVariable is defined
+                    newHotspot.valor = dataValor || '';       // Now dataValor is defined
                     newHotspot.titleTextSetter = title || '';
-                    newHotspot.soundSetter = dataSound || '';
+                    newHotspot.soundSetter = dataSound || ''; // Assign dataSound for setter
                     newHotspot.infoTextSetter = dataInfo || '';
                     newHotspot.infoTextSetter2 = dataInfo2 || '';
                     // Assign setter-specific condition fields
@@ -1061,6 +1187,7 @@
                     newHotspot.setterConditionValue = dataConditionVal || '';
                     newHotspot.setterFailInfo = dataFailInfoClic || '';
                     newHotspot.setterFailInfoEnter = dataFailInfoEnter || '';
+                    newHotspot.setterSoundFail = dataSoundFail || '';
                 }
                 hotspots.push(newHotspot);
             });
@@ -1121,6 +1248,7 @@
                 const twineInfoDisplay = document.getElementById('twineImageInfoDisplay');
                 let infoTextToDisplay = '';
                 let failInfoEnterToDisplay = '';
+                let visitLimitTextEnterToDisplay = '';
 
                 // Determine which info/fail texts to use based on hotspot type
                 if (e.target.hasAttribute('data-passage')) {
@@ -1131,36 +1259,43 @@
                     failInfoEnterToDisplay = e.target.getAttribute('text_fail_enter');
                 }
 
+                // Get visit limit text for mouse enter
+                visitLimitTextEnterToDisplay = e.target.getAttribute('data-visit-limit-enter');
+
                 if (twineInfoDisplay) {
-                    if (e.target.hasAttribute('data-condition-var') && e.target.hasAttribute('data-condition-val')) {
-                        if (!checkCondition(e.target)) {
-                            // Condition not met, display failInfoEnter
-                            if (failInfoEnterToDisplay) {
-                                window.Harlowe.set('$tempInfoDisplay', failInfoEnterToDisplay);
-                                twineInfoDisplay.style.display = 'block';
-                            } else {
-                                twineInfoDisplay.style.display = 'none';
-                                window.Harlowe.set('$tempInfoDisplay', '');
-                            }
-                        } else {
-                            // Condition met, display regular info text
-                            if (infoTextToDisplay) {
-                                window.Harlowe.set('$tempInfoDisplay', infoTextToDisplay);
-                                twineInfoDisplay.style.display = 'block';
-                            } else {
-                                twineInfoDisplay.style.display = 'none';
-                                window.Harlowe.set('$tempInfoDisplay', '');
-                            }
-                        }
+                    let textToShow = '';
+
+                    // Check for general condition first
+                    const hasGeneralCondition = e.target.hasAttribute('data-condition-var') && e.target.hasAttribute('data-condition-val');
+                    const isGeneralConditionMet = hasGeneralCondition ? checkCondition(e.target) : true;
+
+                    // Check for visit limit
+                    const hasVisitLimit = e.target.hasAttribute('data-visit-limit');
+                    let isVisitLimitReached = false;
+                    if (hasVisitLimit) {
+                        const hotspotId = e.target.id || e.target.dataset.hotspotId; // Use ID if available, otherwise dataset ID
+                        const visitLimit = parseInt(e.target.getAttribute('data-visit-limit'));
+                        const currentVisits = window.Harlowe.get(`$visits_hotspot_${hotspotId}`) || 0; // Assume a Twine variable for visits
+                        isVisitLimitReached = currentVisits >= visitLimit;
+                    }
+
+                    if (hasGeneralCondition && !isGeneralConditionMet) {
+                        // General condition not met, prioritize fail info
+                        textToShow = failInfoEnterToDisplay || '';
+                    } else if (hasVisitLimit && isVisitLimitReached) {
+                        // Visit limit reached, prioritize visit limit text
+                        textToShow = visitLimitTextEnterToDisplay || '';
                     } else {
-                        // No condition, display regular info text
-                        if (infoTextToDisplay) {
-                            window.Harlowe.set('$tempInfoDisplay', infoTextToDisplay);
-                            twineInfoDisplay.style.display = 'block';
-                        } else {
-                            twineInfoDisplay.style.display = 'none';
-                            window.Harlowe.set('$tempInfoDisplay', '');
-                        }
+                        // All conditions met or no conditions, show regular info
+                        textToShow = infoTextToDisplay || '';
+                    }
+                    
+                    if (textToShow) {
+                        window.Harlowe.set('$tempInfoDisplay', textToShow);
+                        twineInfoDisplay.style.display = 'block';
+                    } else {
+                        twineInfoDisplay.style.display = 'none';
+                        window.Harlowe.set('$tempInfoDisplay', '');
                     }
                 }
             }
@@ -1182,10 +1317,12 @@
             if (e.target.tagName === 'AREA' && e.target.classList.contains('hotspot-item')) {
                 const hotspotName = e.target.getAttribute('alt'); // Obtenir el text alt (nom del hotspot)
                 const dataSound = e.target.getAttribute('data-sound');
+                const dataSoundFail = e.target.getAttribute('data-sound-fail');
                 const twineInfoDisplay = document.getElementById('twineImageInfoDisplay');
 
                 let infoText2ToDisplay = '';
                 let failInfoClicToDisplay = '';
+                let visitLimitTextClicToDisplay = '';
 
                 // Determine which info/fail texts to use based on hotspot type
                 if (e.target.hasAttribute('data-passage')) {
@@ -1196,59 +1333,150 @@
                     failInfoClicToDisplay = e.target.getAttribute('text_fail_clic');
                 }
 
-                // Reproduir so si està disponible (assumint que hal.tracks està definit a Twine)
-                if (dataSound && window.hal && window.hal.tracks && window.hal.tracks[dataSound]) {
-                    window.hal.tracks[dataSound].play();
+                // Get visit limit text for click
+                visitLimitTextClicToDisplay = e.target.getAttribute('data-visit-limit-clic');
+
+                // Check for general condition
+                const hasGeneralCondition = e.target.hasAttribute('data-condition-var') && e.target.hasAttribute('data-condition-val');
+                const isGeneralConditionMet = hasGeneralCondition ? checkCondition(e.target) : true;
+
+                // Check for visit limit
+                const hasVisitLimit = e.target.hasAttribute('data-visit-limit');
+                let isVisitLimitReached = false;
+                if (hasVisitLimit) {
+                    const hotspotId = e.target.id || e.target.dataset.hotspotId; // Use ID if available, otherwise dataset ID
+                    const visitLimit = parseInt(e.target.getAttribute('data-visit-limit'));
+                    const currentVisits = window.Harlowe.get(`$visits_hotspot_${hotspotId}`) || 0; // Assume a Twine variable for visits
+                    isVisitLimitReached = currentVisits >= visitLimit;
                 }
 
-                if (e.target.hasAttribute('data-condition-var') && e.target.hasAttribute('data-condition-val')) {
-                    if (!checkCondition(e.target)) {
-                        // Condició no complerta, mostrar informació de fallada (click) i no executar l'acció
-                        if (twineInfoDisplay) {
-                            if (failInfoClicToDisplay) {
-                                window.Harlowe.set('$tempInfoDisplay', failInfoClicToDisplay);
-                                twineInfoDisplay.style.display = 'block';
-                            } else {
-                                twineInfoDisplay.style.display = 'none';
-                                window.Harlowe.set('$tempInfoDisplay', ''); // Netejar la visualització si no hi ha informació de fallada
-                            }
-                        }
-                        console.log(`Condició no assolida per al hotspot: ${hotspotName}`);
-                        return; // Stop execution if condition not met
+                let preventAction = false;
+                let textToShow = '';
+                let soundToPlay = dataSound; // Default sound
+
+                if (hasGeneralCondition && !isGeneralConditionMet) {
+                    // General condition not met
+                    textToShow = failInfoClicToDisplay || '';
+                    soundToPlay = dataSoundFail || dataSound; // Prioritize fail sound
+                    preventAction = true;
+                } else if (hasVisitLimit && isVisitLimitReached) {
+                    // Visit limit reached
+                    textToShow = visitLimitTextClicToDisplay || '';
+                    soundToPlay = dataSoundFail || dataSound; // Use fail sound if available, otherwise normal
+                    preventAction = true;
+                } else {
+                    // All conditions met or no conditions, proceed with normal action
+                    textToShow = infoText2ToDisplay || '';
+                    soundToPlay = dataSound;
+                }
+
+                if (twineInfoDisplay) {
+                    if (textToShow) {
+                        window.Harlowe.set('$tempInfoDisplay', textToShow);
+                        twineInfoDisplay.style.display = 'block';
+                    } else {
+                        twineInfoDisplay.style.display = 'none';
+                        window.Harlowe.set('$tempInfoDisplay', '');
                     }
                 }
 
-                // Proceed with action only if condition is met (or no condition exists)
+                // Play sound
+                if (soundToPlay && window.hal && window.hal.tracks && window.hal.tracks[soundToPlay]) {
+                    window.hal.tracks[soundToPlay].play();
+                }
+
+                if (preventAction) {
+                    console.log(`Acció previnguda per al hotspot: ${hotspotName} (condició no assolida o límit de visites assolit).`);
+                    return; // Stop execution if action is prevented
+                }
+
+                // Proceed with action only if all conditions are met
                 if (e.target.hasAttribute('data-passage')) {
-                    // Procedir al passatge
                     const linksInOcult = document.querySelectorAll('#Ocult a');
                     let foundLink = null;
-                    // Find the link whose text content matches the hotspot's data-passage value
                     const targetPassageValue = e.target.getAttribute('data-passage');
                     for (let i = 0; i < linksInOcult.length; i++) {
-                        // The text content of the hidden Harlowe link is the passage name
                         if (linksInOcult[i].textContent.trim() === targetPassageValue) {
                             foundLink = linksInOcult[i];
                             break;
                         }
                     }
                     if (foundLink) {
-                        foundLink.click(); // Fer clic programàticament a l'enllaç Harlowe ocult
-                        // Establir el text d'informació si la condició es compleix
-                        if (twineInfoDisplay) {
-                            if (infoText2ToDisplay) { // Show click info for passage
-                                window.Harlowe.set('$tempInfoDisplay', infoText2ToDisplay);
-                                twineInfoDisplay.style.display = 'block';
-                            } else {
-                                twineInfoDisplay.style.display = 'none';
-                                window.Harlowe.set('$tempInfoDisplay', '');
-                            }
-                        }
+                        foundLink.click();
                     } else {
                         console.warn(`No s'ha trobat el link de Harlowe ocult per al hotspot de passatge: ${hotspotName}. Buscat: ${targetPassageValue}`);
                     }
+
+                    // Secondary setter logic for passage type
+                    const secondaryVariableName = e.target.getAttribute('data-variable-2');
+                    const secondaryRawValue = e.target.getAttribute('data-valor-2');
+
+                    if (secondaryVariableName && secondaryRawValue !== null && typeof window.Harlowe !== 'undefined' && typeof window.Harlowe.set === 'function' && typeof window.Harlowe.get === 'function') {
+                        const secondaryTrimmedRawValue = secondaryRawValue.trim();
+                        const arithmeticOperators = ['+', '-', '*', '/', '%'];
+                        const startsWithArithmeticOperatorSecondary = arithmeticOperators.some(op => secondaryTrimmedRawValue.startsWith(op));
+
+                        if (startsWithArithmeticOperatorSecondary) {
+                            const operator = secondaryTrimmedRawValue.charAt(0);
+                            const operandStr = secondaryTrimmedRawValue.substring(1).trim();
+                            const operand = Number(operandStr);
+
+                            if (!isNaN(operand)) {
+                                let currentValue = Number(window.Harlowe.get(secondaryVariableName));
+                                if (isNaN(currentValue)) {
+                                    console.warn(`La variable secundària '${secondaryVariableName}' no és un número. S'inicialitza a 0 per realitzar l'operació aritmètica.`);
+                                    window.Harlowe.set(secondaryVariableName, 0);
+                                    currentValue = 0;
+                                }
+
+                                let newValue;
+                                switch (operator) {
+                                    case '+': newValue = currentValue + operand; break;
+                                    case '-': newValue = currentValue - operand; break;
+                                    case '*': newValue = currentValue * operand; break;
+                                    case '/':
+                                        if (operand === 0) {
+                                            console.warn(`Divisió per zero en la variable secundària '${secondaryVariableName}'.`);
+                                            return;
+                                        }
+                                        newValue = currentValue / operand;
+                                        break;
+                                    case '%':
+                                        if (operand === 0) {
+                                            console.warn(`Mòdul per zero en la variable secundària '${secondaryVariableName}'.`);
+                                            return;
+                                        }
+                                        newValue = currentValue % operand;
+                                        break;
+                                    default:
+                                        console.warn(`Operador aritmètic desconegut per a la variable secundària: ${operator}`);
+                                        return;
+                                }
+                                window.Harlowe.set(secondaryVariableName, newValue);
+                                console.log(`Variable de Twine secundària '${secondaryVariableName}' actualitzada aritmèticament a:`, newValue);
+                            } else {
+                                console.warn(`Operand invàlid per a l'operació aritmètica de la variable secundària: ${operandStr}`);
+                            }
+                        } else {
+                            let parsedValue;
+                            if (!isNaN(secondaryTrimmedRawValue) && secondaryTrimmedRawValue !== '') {
+                                parsedValue = Number(secondaryTrimmedRawValue);
+                            } else {
+                                if (secondaryTrimmedRawValue.startsWith('"') && secondaryTrimmedRawValue.endsWith('"') && secondaryTrimmedRawValue.length > 1) {
+                                    parsedValue = secondaryTrimmedRawValue.substring(1, secondaryTrimmedRawValue.length - 1);
+                                } else {
+                                    parsedValue = secondaryTrimmedRawValue;
+                                }
+                            }
+                            window.Harlowe.set(secondaryVariableName, parsedValue);
+                            console.log(`Variable de Twine secundària '${secondaryVariableName}' actualitzada a:`, parsedValue);
+                        }
+                    } else if (secondaryVariableName && secondaryRawValue !== null) {
+                        console.warn(`No s'ha pogut actualitzar la variable secundària de Twine. Harlowe.set/get no disponible o secondaryVariableName invàlid.`);
+                    }
+
                 } else if (e.target.hasAttribute('data_variable') && e.target.hasAttribute('data_valor')) {
-                    // Aquest és un setter, utilitzar directament window.Harlowe.set()
+                    // Primary setter logic (remains the same for setter type)
                     const variableName = e.target.getAttribute('data_variable');
                     const rawValue = e.target.getAttribute('data_valor');
                     
@@ -1262,19 +1490,16 @@
                     const startsWithArithmeticOperator = arithmeticOperators.some(op => trimmedRawValue.startsWith(op));
 
                     if (startsWithArithmeticOperator) {
-                        // Gestionar operacions aritmètiques
                         const operator = trimmedRawValue.charAt(0);
                         const operandStr = trimmedRawValue.substring(1).trim();
                         const operand = Number(operandStr);
 
                         if (!isNaN(operand)) {
-                            let currentValue = Number(window.Harlowe.get(variableName)); // Convertir explícitament a número
-
-                            // Assegurar que el valor actual sigui un número per a les operacions aritmètiques, inicialitzar a 0 si no ho és
+                            let currentValue = Number(window.Harlowe.get(variableName));
                             if (isNaN(currentValue)) {
                                 console.warn(`La variable '${variableName}' no és un número. S'inicialitza a 0 per realitzar l'operació aritmètica.`);
-                                window.Harlowe.set(variableName, 0); // Inicialitzar a 0
-                                currentValue = 0; // Utilitzar 0 per a l'operació actual
+                                window.Harlowe.set(variableName, 0);
+                                currentValue = 0;
                             }
 
                             let newValue;
@@ -1306,12 +1531,10 @@
                             console.warn(`Operand invàlid per a l'operació aritmètica: ${operandStr}`);
                         }
                     } else {
-                        // Gestionar l'assignació directa (número o cadena)
                         let parsedValue;
                         if (!isNaN(trimmedRawValue) && trimmedRawValue !== '') {
                             parsedValue = Number(trimmedRawValue);
                         } else {
-                            // És una cadena. Comprovar si està explícitament entre cometes per l'usuari i eliminar les cometes externes.
                             if (trimmedRawValue.startsWith('"') && trimmedRawValue.endsWith('"') && trimmedRawValue.length > 1) {
                                 parsedValue = trimmedRawValue.substring(1, trimmedRawValue.length - 1);
                             } else {
@@ -1322,14 +1545,79 @@
                         console.log(`Variable de Twine '${variableName}' actualitzada a:`, parsedValue);
                     }
 
-                    // Actualitzar la visualització d'informació per al setter (lògica existent)
+                    // Secondary setter logic (remains the same for setter type)
+                    const secondaryVariableName = e.target.getAttribute('data-variable-2');
+                    const secondaryRawValue = e.target.getAttribute('data-valor-2');
+
+                    if (secondaryVariableName && secondaryRawValue !== null) {
+                        const secondaryTrimmedRawValue = secondaryRawValue.trim();
+                        const startsWithArithmeticOperatorSecondary = arithmeticOperators.some(op => secondaryTrimmedRawValue.startsWith(op));
+
+                        if (startsWithArithmeticOperatorSecondary) {
+                            const operator = secondaryTrimmedRawValue.charAt(0);
+                            const operandStr = secondaryTrimmedRawValue.substring(1).trim();
+                            const operand = Number(operandStr);
+
+                            if (!isNaN(operand)) {
+                                let currentValue = Number(window.Harlowe.get(secondaryVariableName));
+                                if (isNaN(currentValue)) {
+                                    console.warn(`La variable secundària '${secondaryVariableName}' no és un número. S'inicialitza a 0 per realitzar l'operació aritmètica.`);
+                                    window.Harlowe.set(secondaryVariableName, 0);
+                                    currentValue = 0;
+                                }
+
+                                let newValue;
+                                switch (operator) {
+                                    case '+': newValue = currentValue + operand; break;
+                                    case '-': newValue = currentValue - operand; break;
+                                    case '*': newValue = currentValue * operand; break;
+                                    case '/':
+                                        if (operand === 0) {
+                                            console.warn(`Divisió per zero en la variable secundària '${secondaryVariableName}'.`);
+                                            return;
+                                        }
+                                        newValue = currentValue / operand;
+                                        break;
+                                    case '%':
+                                        if (operand === 0) {
+                                            console.warn(`Mòdul per zero en la variable secundària '${secondaryVariableName}'.`);
+                                            return;
+                                        }
+                                        newValue = currentValue % operand;
+                                        break;
+                                    default:
+                                        console.warn(`Operador aritmètic desconegut per a la variable secundària: ${operator}`);
+                                        return;
+                                }
+                                window.Harlowe.set(secondaryVariableName, newValue);
+                                console.log(`Variable de Twine secundària '${secondaryVariableName}' actualitzada aritmèticament a:`, newValue);
+                            } else {
+                                console.warn(`Operand invàlid per a l'operació aritmètica de la variable secundària: ${operandStr}`);
+                            }
+                        } else {
+                            let parsedValue;
+                            if (!isNaN(secondaryTrimmedRawValue) && secondaryTrimmedRawValue !== '') {
+                                parsedValue = Number(secondaryTrimmedRawValue);
+                            } else {
+                                if (secondaryTrimmedRawValue.startsWith('"') && secondaryTrimmedRawValue.endsWith('"') && secondaryTrimmedRawValue.length > 1) {
+                                    parsedValue = secondaryTrimmedRawValue.substring(1, secondaryTrimmedRawValue.length - 1);
+                                } else {
+                                    parsedValue = secondaryTrimmedRawValue;
+                                }
+                            }
+                            window.Harlowe.set(secondaryVariableName, parsedValue);
+                            console.log(`Variable de Twine secundària '${secondaryVariableName}' actualitzada a:`, parsedValue);
+                        }
+                    }
+
+                    // Update info display for the setter (existing logic)
                     if (twineInfoDisplay) {
                         if (infoText2ToDisplay) { // Show click info for setter
                             window.Harlowe.set('$tempInfoDisplay', infoText2ToDisplay);
                             twineInfoDisplay.style.display = 'block';
                         } else {
                             twineInfoDisplay.style.display = 'none';
-                            window.Harlowe.set('$tempInfoDisplay', ''); // Netejar la visualització si no hi ha informació
+                            window.Harlowe.set('$tempInfoDisplay', ''); // Clear display if no info
                         }
                     }
                 }
