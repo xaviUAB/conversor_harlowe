@@ -43,9 +43,12 @@ jQuery(document).ready(function () {
         }
         
         let parsedValuePart;
+        // Try to parse as boolean first
         if (valuePart === 'true') parsedValuePart = true;
         else if (valuePart === 'false') parsedValuePart = false;
+        // Then try to parse as number
         else if (!isNaN(Number(valuePart)) && valuePart !== '') parsedValuePart = Number(valuePart);
+        // Otherwise, keep as string (and ensure it's quoted for eval)
         else parsedValuePart = valuePart; 
         
         expression = `${JSON.stringify(currentValue)} ${operatorUsed} ${JSON.stringify(parsedValuePart)}`;
@@ -70,7 +73,7 @@ jQuery(document).ready(function () {
             } catch (e) {
                 console.error("ERROR: Error en reproduir el so amb HAL:", soundId, e.message);
             }
-        } else if (soundId) {
+        } else if (soundId) { // Changed from else if (soundId) to just else as it's meant for when HAL is not available
             console.warn("ADVERTENCIA: L'API de HAL no està disponible per al so:", soundId);
         }
     }
@@ -85,6 +88,21 @@ jQuery(document).ready(function () {
                 // console.warn("ADVERTENCIA: No s'ha pogut aturar el so amb HAL:", soundId, e.message); 
             }
         }
+    }
+    
+    // NOU: Funció per aturar tots els sons de hotspots actius (útil en canvis de passatge)
+    function stopAllHotspotSounds() {
+        jQuery('.hotspot-item').each(function() {
+            const soundId = jQuery(this).data('sound');
+            const soundFailId = jQuery(this).data('sound-fail');
+            const soundClickId = jQuery(this).data('sound-click');
+            const soundClickFailId = jQuery(this).data('sound-click-fail');
+
+            stopHotspotSound(soundId);
+            stopHotspotSound(soundFailId);
+            stopHotspotSound(soundClickId);
+            stopHotspotSound(soundClickFailId);
+        });
     }
 
 
@@ -256,15 +274,24 @@ jQuery(document).ready(function () {
         const hotspotId = jQuery(this).attr('alt'); // Utilitzem l'alt com a ID únic
         const visitLimit = parseInt(jQuery(this).data('visit-limit'));
         const limitVisitClic = jQuery(this).attr('data-visit-limit-clic'); 
-        const soundFailId = jQuery(this).data('sound-fail'); 
+        
+        const soundId = jQuery(this).data('sound'); // So de mouseenter exitós
+        const soundFailId = jQuery(this).data('sound-fail'); // So de mouseenter fallat
+        const soundClickId = jQuery(this).data('sound-click'); // NOU: So de clic exitós
         const soundClickFailId = jQuery(this).data('sound-click-fail'); // NOU: So de clic fallat
+
+        // ATURA ELS SONS DE HOVER (mouse enter/fail) abans de qualsevol altra cosa en aquest hotspot
+        stopHotspotSound(soundId);
+        stopHotspotSound(soundFailId);
 
         // Comprovem si el hotspot té un límit de visites i si aquest s'ha superat
         if (!isNaN(visitLimit) && State.variables.hotspotClicks[hotspotId] >= visitLimit) {
             console.log(`DEBUG: Clic - Límit de visites (${hotspotId}) assolit: ${State.variables.hotspotClicks[hotspotId]}/${visitLimit}. Text de clic:`, limitVisitClic, ". No es navega.");
             toggleImageInfo(limitVisitClic);
-            // NOU: Prioritza soundClickFailId, si no, usa soundFailId
-            playHotspotSound(soundClickFailId || soundFailId); 
+            // Si hi ha so de clic fallat, sona. Si no, no sona res.
+            if (soundClickFailId) { 
+                playHotspotSound(soundClickFailId); 
+            }
             return; 
         }
 
@@ -272,8 +299,7 @@ jQuery(document).ready(function () {
         const conditionVarName = jQuery(this).data('condition-var');
         const conditionVal = jQuery(this).data('condition-val');
         const failClickInfo = jQuery(this).attr('text_fail_clic');
-        const soundId = jQuery(this).data('sound'); 
-        const soundClickId = jQuery(this).data('sound-click'); // NOU: So de clic exitós
+        
 
         if (passageName && typeof State !== 'undefined' && State.variables) {
             const isConditionMet = evaluateCondition(conditionVarName, conditionVal);
@@ -285,8 +311,10 @@ jQuery(document).ready(function () {
                 if (!isNaN(visitLimit)) { 
                     State.variables.hotspotClicks[hotspotId] = (State.variables.hotspotClicks[hotspotId] || 0) + 1;
                 }
-                // NOU: Prioritza soundClickId, si no, usa soundId
-                playHotspotSound(soundClickId || soundId); 
+                // Si hi ha so de clic exitós, sona. Si no, no sona res.
+                if (soundClickId) {
+                    playHotspotSound(soundClickId); 
+                }
                 State.variables.retornA = passageName; 
                 const link = jQuery("tw-link").filter(function () {
                     const text = jQuery(this).text().trim();
@@ -298,8 +326,10 @@ jQuery(document).ready(function () {
                     console.warn("ADVERTENCIA: No s'ha trobat <tw-link> per a la navegació Harlowe:", passageName);
                 }
             } else {
-                // NOU: Prioritza soundClickFailId, si no, usa soundFailId
-                playHotspotSound(soundClickFailId || soundFailId);
+                // Si hi ha so de clic fallat, sona. Si no, no sona res.
+                if (soundClickFailId) {
+                    playHotspotSound(soundClickFailId);
+                }
                 if (failClickInfo) {
                     toggleImageInfo(failClickInfo); 
                 } else {
@@ -314,15 +344,24 @@ jQuery(document).ready(function () {
         const hotspotId = jQuery(this).attr('alt'); // Utilitzem l'alt com a ID únic
         const visitLimit = parseInt(jQuery(this).data('visit-limit'));
         const limitVisitClic = jQuery(this).attr('data-visit-limit-clic'); 
-        const soundFailId = jQuery(this).data('sound-fail'); 
+        
+        const soundId = jQuery(this).data('sound'); // So de mouseenter exitós
+        const soundFailId = jQuery(this).data('sound-fail'); // So de mouseenter fallat
+        const soundClickId = jQuery(this).data('sound-click'); // NOU: So de clic exitós
         const soundClickFailId = jQuery(this).data('sound-click-fail'); // NOU: So de clic fallat
+
+        // ATURA ELS SONS DE HOVER (mouse enter/fail) abans de qualsevol altra cosa en aquest hotspot
+        stopHotspotSound(soundId);
+        stopHotspotSound(soundFailId);
 
         // Comprovem si el hotspot té un límit de visites i si aquest s'ha superat
         if (!isNaN(visitLimit) && State.variables.hotspotClicks[hotspotId] >= visitLimit) {
             console.log(`DEBUG: Clic - Límit de visites (${hotspotId}) assolit: ${State.variables.hotspotClicks[hotspotId]}/${visitLimit}. Text de clic:`, limitVisitClic, ". No s'executa setter.");
             toggleImageInfo(limitVisitClic);
-            // NOU: Prioritza soundClickFailId, si no, usa soundFailId
-            playHotspotSound(soundClickFailId || soundFailId); 
+            // Si hi ha so de clic fallat, sona. Si no, no sona res.
+            if (soundClickFailId) {
+                playHotspotSound(soundClickFailId); 
+            }
             return; 
         }
 
@@ -331,8 +370,7 @@ jQuery(document).ready(function () {
         const failClickInfo = jQuery(this).attr('text_fail_clic'); 
         const infoText2 = jQuery(this).attr('data_info_2');
         const infoText = jQuery(this).attr('data_info'); 
-        const soundId = jQuery(this).data('sound'); 
-        const soundClickId = jQuery(this).data('sound-click'); // NOU: So de clic exitós
+        
 
         const isConditionMet = evaluateCondition(conditionVarName, conditionVal);
 
@@ -344,8 +382,10 @@ jQuery(document).ready(function () {
                 State.variables.hotspotClicks[hotspotId] = (State.variables.hotspotClicks[hotspotId] || 0) + 1;
             }
 
-            // NOU: Prioritza soundClickId, si no, usa soundId
-            playHotspotSound(soundClickId || soundId); 
+            // Si hi ha so de clic exitós, sona. Si no, no sona res.
+            if (soundClickId) {
+                playHotspotSound(soundClickId); 
+            }
             // El display d'informació s'actualitza després d'executar els setters, per si les variables canvien els textos
             if (infoText2) {
                  toggleImageInfo(infoText2);
@@ -353,8 +393,10 @@ jQuery(document).ready(function () {
                 toggleImageInfo(infoText);
             }
         } else {
-            // NOU: Prioritza soundClickFailId, si no, usa soundFailId
-            playHotspotSound(soundClickFailId || soundFailId);
+            // Si hi ha so de clic fallat, sona. Si no, no sona res.
+            if (soundClickFailId) {
+                playHotspotSound(soundClickFailId);
+            }
             if (failClickInfo) {
                 toggleImageInfo(failClickInfo); 
             } else {
@@ -364,7 +406,9 @@ jQuery(document).ready(function () {
     });
 
     // Esdeveniments de passatge
+    // NOU: Atura tots els sons dels hotspots quan un passatge s'inicia o es mostra
     jQuery(document).on(':passagedisplay', function() {
+        stopAllHotspotSounds(); // Atura tots els sons en el display del passatge
         if (typeof State !== 'undefined' && State.variables) {
             State.variables.tempInfoDisplay = '';
         }
@@ -372,13 +416,13 @@ jQuery(document).ready(function () {
     });
 
     jQuery(document).on(':passageinit', function() {
+        stopAllHotspotSounds(); // Atura tots els sons en la inicialització del passatge (aquesta és més robusta)
         if (typeof State !== 'undefined' && State.variables) {
             State.variables.tempInfoDisplay = '';
         }
         jQuery('#' + TWINE_IMAGE_INFO_DISPLAY_ID).empty().hide(); 
     });
 });
-
 
 
 
