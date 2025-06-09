@@ -525,14 +525,16 @@
                         type: 'passage',
                         value: '', // For passage type
                         titleText: '',
-                        sound: '', // Initialize sound property
+                        sound: '', // Initialize sound property (mouse enter)
+                        soundClick: '', // NEW: Sound for click (passage)
                         infoText: '', // This field will now store the Harlowe text (mouse enter)
                         infoText2: '', // NEW: For passage click info text
                         transition: '', // NEW: For passage transition
                         variable: '', // New field for setter variable name
                         valor: '', // New field for setter variable value
                         titleTextSetter: '',
-                        soundSetter: '', // Initialize soundSetter property
+                        soundSetter: '', // Initialize soundSetter property (mouse enter)
+                        soundClickSetter: '', // NEW: Sound for click (setter)
                         infoTextSetter: '', // This field will now store the Harlowe text (mouse enter)
                         infoTextSetter2: '', // New field for alternative info text for setter (click)
                         
@@ -541,14 +543,16 @@
                         passageConditionValue: '',
                         passageFailInfo: '',
                         passageFailInfoEnter: '',
-                        passageSoundFail: '',
+                        passageSoundFail: '', // (mouse enter)
+                        passageSoundClickFail: '', // NEW: Sound for click when condition fails (passage)
 
                         // Setter specific condition fields
                         setterConditionVariable: '',
                         setterConditionValue: '',
                         setterFailInfo: '',
                         setterFailInfoEnter: '',
-                        setterSoundFail: '',
+                        setterSoundFail: '', // (mouse enter)
+                        setterSoundClickFail: '', // NEW: Sound for click when condition fails (setter)
 
                         // Visit Limit fields (common for both types)
                         visitLimit: '',
@@ -785,7 +789,8 @@
                                 <label>Text (mouse enter):</label><textarea data-field="infoTextSetter">${hotspot.infoTextSetter || ''}</textarea>
                                 <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoTextSetter2">${hotspot.infoTextSetter2 || ''}</textarea>
                                 <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleTextSetter" value="${hotspot.titleTextSetter || ''}">
-                                <label>So (nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="soundSetter" value="${hotspot.soundSetter || ''}">
+                                <label>So (clic - nom àudio enregistrat a hal.tracks):</label><input type="text" data-field="soundClickSetter" value="${hotspot.soundClickSetter || ''}">
+                                <label>So (mouse enter - nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="soundSetter" value="${hotspot.soundSetter || ''}">
 
                                 <div class="secondary-variable-toggle-container">
                                     <label class="darkblue-label">
@@ -809,7 +814,8 @@
                                     <label class="condition-label">Valor (Condició):</label><input type="text" data-field="setterConditionValue" value="${hotspot.setterConditionValue || ''}" placeholder="Ej: true o 1">
                                     <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="setterFailInfoEnter">${hotspot.setterFailInfoEnter || ''}</textarea>
                                     <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="setterFailInfo">${hotspot.setterFailInfo || ''}</textarea>
-                                    <label class="condition-label">So (mentre no s'assoleix la condició:)</label><input type="text" data-field="setterSoundFail" value="${hotspot.setterSoundFail || ''}">
+                                    <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundClickFail" value="${hotspot.setterSoundClickFail || ''}">
+                                    <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundFail" value="${hotspot.setterSoundFail || ''}">
                                 </div>
                                 
                                 <label class="limit-label">Límit de visites:</label><input type="number" data-field="visitLimit" value="${hotspot.visitLimit || ''}" placeholder="">
@@ -849,7 +855,8 @@
                                 <label>Text (mouse enter):</label><textarea data-field="infoText">${hotspot.infoText || ''}</textarea>
                                 <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoText2">${hotspot.infoText2 || ''}</textarea>
                                 <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleText" value="${hotspot.titleText || ''}">
-                                <label>So (nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="sound" value="${hotspot.sound || ''}">
+                                <label>So (clic - nom àudio enregistrat a hal.tracks):</label><input type="text" data-field="soundClick" value="${hotspot.soundClick || ''}">
+                                <label>So (mouse enter - nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="sound" value="${hotspot.sound || ''}">
 
                                 <div class="secondary-variable-toggle-container">
                                     <label class="darkblue-label">
@@ -872,7 +879,8 @@
                                     <label class="condition-label">Valor (Condició):</label><input type="text" data-field="passageConditionValue" value="${hotspot.passageConditionValue || ''}" placeholder="Ej: true o 1">
                                     <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="passageFailInfoEnter">${hotspot.passageFailInfoEnter || ''}</textarea>
                                     <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="passageFailInfo">${hotspot.passageFailInfo || ''}</textarea>
-                                    <label class="condition-label">So (mentre no s'assoleix la condició:)</label><input type="text" data-field="passageSoundFail" value="${hotspot.passageSoundFail || ''}">
+                                    <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundClickFail" value="${hotspot.passageSoundClickFail || ''}">
+                                    <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundFail" value="${hotspot.passageSoundFail || ''}">
                                 </div>
 
                                 <label class="limit-label">Límit de visites:</label><input type="number" data-field="visitLimit" value="${hotspot.visitLimit || ''}" placeholder="">
@@ -922,7 +930,7 @@
                 });
                 
                 // Update event listeners for 'value' (passage) and 'variable', 'valor' (setter)
-                ['value', 'infoText2', 'titleText','sound','infoText'].forEach(f => {
+                ['value', 'infoText2', 'titleText','sound','soundClick','infoText'].forEach(f => {
                     const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -943,7 +951,7 @@
                     });
                 }
 
-                ['variable', 'valor', 'titleTextSetter','soundSetter','infoTextSetter','infoTextSetter2'].forEach(f => {
+                ['variable', 'valor', 'titleTextSetter','soundSetter','soundClickSetter','infoTextSetter','infoTextSetter2'].forEach(f => {
                     const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -990,7 +998,7 @@
 
 
                 // Passage-specific condition fields listeners
-                ['passageConditionVariable', 'passageConditionValue', 'passageFailInfo', 'passageFailInfoEnter', 'passageSoundFail'].forEach(f => {
+                ['passageConditionVariable', 'passageConditionValue', 'passageFailInfo', 'passageFailInfoEnter', 'passageSoundFail', 'passageSoundClickFail'].forEach(f => {
                     const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -1002,7 +1010,7 @@
                 });
 
                 // Setter-specific condition fields listeners
-                ['setterConditionVariable', 'setterConditionValue', 'setterFailInfo', 'setterFailInfoEnter', 'setterSoundFail'].forEach(f => {
+                ['setterConditionVariable', 'setterConditionValue', 'setterFailInfo', 'setterFailInfoEnter', 'setterSoundFail', 'setterSoundClickFail'].forEach(f => {
                     const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -1118,11 +1126,13 @@
                             areaTag += `            data-condition-val="${hotspot.passageConditionValue.replace(/"/g, '&quot;')}"\n`;
                             if (hotspot.passageFailInfo) areaTag += `            text_fail_clic="${hotspot.passageFailInfo.replace(/"/g, '&quot;')}"\n`;
                             if (hotspot.passageFailInfoEnter) areaTag += `            text_fail_enter="${hotspot.passageFailInfoEnter.replace(/"/g, '&quot;')}"\n`;
-                            if (hotspot.passageSoundFail) areaTag += `            data-sound-fail="${hotspot.passageSoundFail.replace(/"/g, '&quot;')}"\n`;
+                            if (hotspot.passageSoundFail) areaTag += `            data-sound-fail="${hotspot.passageSoundFail.replace(/"/g, '&quot;')}"\n`; // mouse enter
+                            if (hotspot.passageSoundClickFail) areaTag += `            data-sound-click-fail="${hotspot.passageSoundClickFail.replace(/"/g, '&quot;')}"\n`; // click
                         }
                     }
                     // Only include data-sound if it has a value
-                    if (hotspot.sound) areaTag += `            data-sound="${hotspot.sound.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.sound) areaTag += `            data-sound="${hotspot.sound.replace(/"/g, '&quot;')}"\n`; // mouse enter
+                    if (hotspot.soundClick) areaTag += `            data-sound-click="${hotspot.soundClick.replace(/"/g, '&quot;')}"\n`; // click
                     if (hotspot.value) areaTag += `            data-passage="${hotspot.value.replace(/"/g, '&quot;')}"\n`;
                     if (hotspot.titleText) areaTag += `            title="${hotspot.titleText.replace(/"/g, '&quot;')}"\n`;
                     if (hotspot.infoText) areaTag += `            data_info="${hotspot.infoText.replace(/"/g, '&quot;')}"\n`;
@@ -1143,11 +1153,13 @@
                             areaTag += `            data-condition-val="${hotspot.setterConditionValue.replace(/"/g, '&quot;')}"\n`;
                             if (hotspot.setterFailInfo) areaTag += `            text_fail_clic="${hotspot.setterFailInfo.replace(/"/g, '&quot;')}"\n`;
                             if (hotspot.setterFailInfoEnter) areaTag += `            text_fail_enter="${hotspot.setterFailInfoEnter.replace(/"/g, '&quot;')}"\n`;
-                            if (hotspot.setterSoundFail) areaTag += `            data-sound-fail="${hotspot.setterSoundFail.replace(/"/g, '&quot;')}"\n`;
+                            if (hotspot.setterSoundFail) areaTag += `            data-sound-fail="${hotspot.setterSoundFail.replace(/"/g, '&quot;')}"\n`; // mouse enter
+                            if (hotspot.setterSoundClickFail) areaTag += `            data-sound-click-fail="${hotspot.setterSoundClickFail.replace(/"/g, '&quot;')}"\n`; // click
                         }
                     }
                     // Only include data-sound if it has a value
-                    if (hotspot.soundSetter) areaTag += `            data-sound="${hotspot.soundSetter.replace(/"/g, '&quot;')}"\n`;
+                    if (hotspot.soundSetter) areaTag += `            data-sound="${hotspot.soundSetter.replace(/"/g, '&quot;')}"\n`; // mouse enter
+                    if (hotspot.soundClickSetter) areaTag += `            data-sound-click="${hotspot.soundClickSetter.replace(/"/g, '&quot;')}"\n`; // click
                     let setMacroContent = '';
                     const valorRaw = hotspot.valor;
                     const valorTrimmed = valorRaw.trim();
@@ -1182,7 +1194,7 @@
 
                     // Secondary Setter attributes (only if enabled or has values)
                     if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) {
-                        if (hotspot.variable2) areaTag += `            data-variable-2="${formatVariable(hotspot.variable2).replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.variable2) areaTag += `            data-variable-2="${formatVariable(hotpot.variable2).replace(/"/g, '&quot;')}"\n`;
                         if (hotspot.valor2) areaTag += `            data-valor-2="${hotspot.valor2.replace(/"/g, '&quot;')}"\n`;
                     }
                 }
@@ -1289,7 +1301,8 @@
                 const dataPassage = area.getAttribute('data-passage');
                 const dataSetter = area.getAttribute('data-setter'); // This will be the combined string
                 const title = area.getAttribute('title');
-                const dataSound = area.getAttribute('data-sound');
+                const dataSound = area.getAttribute('data-sound'); // mouse enter
+                const dataSoundClick = area.getAttribute('data-sound-click'); // click
                 const dataInfo = area.getAttribute('data_info');
                 const dataInfo2 = area.getAttribute('data_info_2');
                 
@@ -1298,7 +1311,8 @@
                 const dataConditionVal = area.getAttribute('data-condition-val');
                 const dataFailInfoClic = area.getAttribute('text_fail_clic');
                 const dataFailInfoEnter = area.getAttribute('text_fail_enter');
-                const dataSoundFail = area.getAttribute('data-sound-fail');
+                const dataSoundFail = area.getAttribute('data-sound-fail'); // mouse enter
+                const dataSoundClickFail = area.getAttribute('data-sound-click-fail'); // click
                 
                 const dataTransition = area.getAttribute('data-transition-depart'); 
 
@@ -1324,6 +1338,7 @@
                     value: '',
                     titleText: '',
                     sound: '',
+                    soundClick: '', // Initialized
                     infoText: '',
                     infoText2: '',
                     transition: '',
@@ -1331,6 +1346,7 @@
                     valor: '',    // Will be assigned below
                     titleTextSetter: '',
                     soundSetter: '',
+                    soundClickSetter: '', // Initialized
                     infoTextSetter: '',
                     infoTextSetter2: '',
                     
@@ -1340,6 +1356,7 @@
                     passageFailInfo: '',
                     passageFailInfoEnter: '',
                     passageSoundFail: '',
+                    passageSoundClickFail: '', // Initialized
 
                     // Setter specific condition fields
                     setterConditionVariable: '',
@@ -1347,6 +1364,7 @@
                     setterFailInfo: '',
                     setterFailInfoEnter: '',
                     setterSoundFail: '',
+                    setterSoundClickFail: '', // Initialized
 
                     // Visit Limit fields (common for both types)
                     visitLimit: visitLimit || '',
@@ -1357,7 +1375,7 @@
                     variable2: dataVariable2 || '',
                     valor2: dataValor2 || '',
                     enableSecondaryVariable: (dataVariable2 || dataValor2) ? true : false, // Set based on loaded data
-                    enableConditionVariable: (dataConditionVar || dataConditionVal || dataFailInfoClic || dataFailInfoEnter || dataSoundFail) ? true : false // Set based on loaded condition data
+                    enableConditionVariable: (dataConditionVar || dataConditionVal || dataFailInfoClic || dataFailInfoEnter || dataSoundFail || dataSoundClickFail) ? true : false // Set based on loaded condition data
                 };
                 
                 if (dataPassage) {
@@ -1365,6 +1383,7 @@
                     newHotspot.value = dataPassage;
                     newHotspot.titleText = title || '';
                     newHotspot.sound = dataSound || ''; // Assign dataSound for passage
+                    newHotspot.soundClick = dataSoundClick || ''; // Assign new soundClick for passage
                     newHotspot.infoText = dataInfo || '';
                     newHotspot.infoText2 = dataInfo2 || '';
                     newHotspot.transition = dataTransition || '';
@@ -1374,6 +1393,7 @@
                     newHotspot.passageFailInfo = dataFailInfoClic || '';
                     newHotspot.passageFailInfoEnter = dataFailInfoEnter || '';
                     newHotspot.passageSoundFail = dataSoundFail || '';
+                    newHotspot.passageSoundClickFail = dataSoundClickFail || ''; // Assign new soundClickFail for passage
                     // Assign secondary setter fields for passage type
                     newHotspot.variable2 = dataVariable2 || '';
                     newHotspot.valor2 = dataValor2 || '';
@@ -1383,6 +1403,7 @@
                     newHotspot.valor = dataValor || '';       // Now dataValor is defined
                     newHotspot.titleTextSetter = title || '';
                     newHotspot.soundSetter = dataSound || ''; // Assign dataSound for setter
+                    newHotspot.soundClickSetter = dataSoundClick || ''; // Assign new soundClickSetter for setter
                     newHotspot.infoTextSetter = dataInfo || '';
                     newHotspot.infoTextSetter2 = dataInfo2 || '';
                     // Assign setter-specific condition fields
@@ -1391,6 +1412,7 @@
                     newHotspot.setterFailInfo = dataFailInfoClic || '';
                     newHotspot.setterFailInfoEnter = dataFailInfoEnter || '';
                     newHotspot.setterSoundFail = dataSoundFail || '';
+                    newHotspot.setterSoundClickFail = dataSoundClickFail || ''; // Assign new soundClickFail for setter
                 }
                 hotspots.push(newHotspot);
             });
@@ -1452,14 +1474,17 @@
                 let infoTextToDisplay = '';
                 let failInfoEnterToDisplay = '';
                 let visitLimitTextEnterToDisplay = '';
+                let soundToPlay = ''; // Initialize sound for mouse enter
 
-                // Determine which info/fail texts to use based on hotspot type
+                // Determine which info/fail texts and sounds to use based on hotspot type
                 if (e.target.hasAttribute('data-passage')) {
                     infoTextToDisplay = e.target.getAttribute('data_info');
                     failInfoEnterToDisplay = e.target.getAttribute('text_fail_enter');
+                    soundToPlay = e.target.getAttribute('data-sound'); // Mouse enter sound for passage
                 } else if (e.target.hasAttribute('data-setter')) {
                     infoTextToDisplay = e.target.getAttribute('data_info'); // data_info is used for mouse enter text for setters too
                     failInfoEnterToDisplay = e.target.getAttribute('text_fail_enter');
+                    soundToPlay = e.target.getAttribute('data-sound'); // Mouse enter sound for setter
                 }
 
                 // Get visit limit text for mouse enter
@@ -1485,9 +1510,11 @@
                     if (hasGeneralCondition && !isGeneralConditionMet) {
                         // General condition not met, prioritize fail info
                         textToShow = failInfoEnterToDisplay || '';
+                        soundToPlay = e.target.getAttribute('data-sound-fail') || soundToPlay; // Prioritize fail sound (mouse enter)
                     } else if (hasVisitLimit && isVisitLimitReached) {
                         // Visit limit reached, prioritize visit limit text
                         textToShow = visitLimitTextEnterToDisplay || '';
+                        soundToPlay = e.target.getAttribute('data-sound-fail') || soundToPlay; // Use fail sound if available, otherwise normal
                     } else {
                         // All conditions met or no conditions, show regular info
                         textToShow = infoTextToDisplay || '';
@@ -1500,6 +1527,10 @@
                         twineInfoDisplay.style.display = 'none';
                         window.Harlowe.set('$tempInfoDisplay', '');
                     }
+                }
+                // Play sound for mouse enter
+                if (soundToPlay && window.hal && window.hal.tracks && window.hal.tracks[soundToPlay]) {
+                    window.hal.tracks[soundToPlay].play();
                 }
             }
         });
@@ -1519,21 +1550,23 @@
         document.addEventListener('click', (e) => {
             if (e.target.tagName === 'AREA' && e.target.classList.contains('hotspot-item')) {
                 const hotspotName = e.target.getAttribute('alt'); // Obtenir el text alt (nom del hotspot)
-                const dataSound = e.target.getAttribute('data-sound');
-                const dataSoundFail = e.target.getAttribute('data-sound-fail');
+                
                 const twineInfoDisplay = document.getElementById('twineImageInfoDisplay');
 
                 let infoText2ToDisplay = '';
                 let failInfoClicToDisplay = '';
                 let visitLimitTextClicToDisplay = '';
+                let soundToPlay = ''; // Initialize sound for click
 
-                // Determine which info/fail texts to use based on hotspot type
+                // Determine which info/fail texts and sounds to use based on hotspot type
                 if (e.target.hasAttribute('data-passage')) {
                     infoText2ToDisplay = e.target.getAttribute('data_info_2');
                     failInfoClicToDisplay = e.target.getAttribute('text_fail_clic');
+                    soundToPlay = e.target.getAttribute('data-sound-click'); // Click sound for passage
                 } else if (e.target.hasAttribute('data-setter')) {
                     infoText2ToDisplay = e.target.getAttribute('data_info_2');
                     failInfoClicToDisplay = e.target.getAttribute('text_fail_clic');
+                    soundToPlay = e.target.getAttribute('data-sound-click'); // Click sound for setter
                 }
 
                 // Get visit limit text for click
@@ -1555,22 +1588,20 @@
 
                 let preventAction = false;
                 let textToShow = '';
-                let soundToPlay = dataSound; // Default sound
 
                 if (hasGeneralCondition && !isGeneralConditionMet) {
                     // General condition not met
                     textToShow = failInfoClicToDisplay || '';
-                    soundToPlay = dataSoundFail || dataSound; // Prioritize fail sound
+                    soundToPlay = e.target.getAttribute('data-sound-click-fail') || soundToPlay; // Prioritize fail sound (click)
                     preventAction = true;
                 } else if (hasVisitLimit && isVisitLimitReached) {
                     // Visit limit reached
                     textToShow = visitLimitTextClicToDisplay || '';
-                    soundToPlay = dataSoundFail || dataSound; // Use fail sound if available, otherwise normal
+                    soundToPlay = e.target.getAttribute('data-sound-click-fail') || soundToPlay; // Use fail sound if available, otherwise normal
                     preventAction = true;
                 } else {
-                    // All conditions met or no conditions, proceed with normal action
+                    // All conditions met or no conditions, show regular info
                     textToShow = infoText2ToDisplay || '';
-                    soundToPlay = dataSound;
                 }
 
                 if (twineInfoDisplay) {
@@ -1583,7 +1614,7 @@
                     }
                 }
 
-                // Play sound
+                // Play sound for click
                 if (soundToPlay && window.hal && window.hal.tracks && window.hal.tracks[soundToPlay]) {
                     window.hal.tracks[soundToPlay].play();
                 }
