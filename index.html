@@ -120,12 +120,6 @@
             padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
-            /* float: right; Removed float */
-            margin-top: 20px; /* Added margin-top to separate from previous fields */
-            display: block; /* Make it a block element */
-            margin-left: auto; /* Center the button */
-            margin-right: auto; /* Center the button */
-            width: fit-content; /* Adjust width to content */
         }
         .hotspot-item button.delete-config-button:hover {
             background-color: #c82333;
@@ -280,6 +274,66 @@
         }
         .strong-red-label {
             color: #8B0000; /* Darker red */
+        }
+
+        /* Styles for the new button row in hotspot-item */
+        .hotspot-item .button-row {
+            display: flex;
+            justify-content: flex-end; /* Align buttons to the right */
+            gap: 10px; /* Space between buttons */
+            margin-top: 20px; /* Space above buttons */
+        }
+        .hotspot-item .button-row button {
+            display: inline-block; /* Ensure they are inline */
+            margin: 0; /* Remove previous margins */
+        }
+        .scroll-to-top-button {
+            background-color: #28a745; /* Green color */
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .scroll-to-top-button:hover {
+            background-color: #218838;
+        }
+
+        /* Styles for custom confirmation modal */
+        #confirmationModal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 9999;
+        }
+        #confirmationModal > div {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+        }
+        #confirmationModal button {
+            padding: 10px 15px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+        #confirmationModal #cancelDeleteButton {
+            background-color: #6c757d; /* Grey */
+        }
+        #confirmationModal #confirmDeleteButton {
+            background-color: #dc3545; /* Red */
         }
     </style>
 </head>
@@ -689,48 +743,6 @@
                     visRect.style.width = `${(coordsArr[2] - coordsArr[0]) * scaleX}px`;
                     visRect.style.height = `${(coordsArr[3] - coordsArr[1]) * scaleY}px`;
 
-                    // On editor, we don't have access to Harlowe variables, so we simplify the display logic
-                    visRect.addEventListener('mouseenter', () => {
-                        let info = '';
-                        let currentFailInfoEnter = '';
-                        let currentInfoText = '';
-
-                        if (hotspot.type === 'passage') {
-                            currentFailInfoEnter = hotspot.passageFailInfoEnter;
-                            currentInfoText = hotspot.infoText;
-                        } else if (hotspot.type === 'setter') {
-                            currentFailInfoEnter = hotspot.setterFailInfoEnter;
-                            currentInfoText = hotspot.infoTextSetter;
-                        }
-
-                        // Prioritize fail info in editor view if condition fields are filled
-                        if ((hotspot.type === 'passage' && hotspot.passageConditionVariable && hotspot.passageConditionValue) ||
-                            (hotspot.type === 'setter' && hotspot.setterConditionVariable && hotspot.setterConditionValue)) {
-                            
-                            if (currentFailInfoEnter) {
-                                info = currentFailInfoEnter;
-                            } else if (currentInfoText) {
-                                info = currentInfoText;
-                            }
-                        } else {
-                            // No condition, display regular info text
-                            if (currentInfoText) {
-                                info = currentInfoText;
-                            }
-                        }
-
-                        // Prioritize visit limit text if limit is set and text is available
-                        if (hotspot.visitLimit && hotspot.visitLimitTextEnter) {
-                            info = hotspot.visitLimitTextEnter; // In editor, just show if present
-                        }
-                        
-                        if (info) {
-                            editorImageInfoDisplay.innerHTML = info.replace(/\n/g, '<br>');
-                            editorImageInfoDisplay.style.display = 'block';
-                        }
-                    });
-                    visRect.addEventListener('mouseleave', () => { editorImageInfoDisplay.innerHTML = ''; editorImageInfoDisplay.style.display = 'none'; });
-
                     // Add click listener to visual hotspot to scroll to its config
                     visRect.addEventListener('click', (e) => {
                         // Prevent this click from bubbling up to the document listener for Twine interaction
@@ -891,8 +903,10 @@
                             </div>
                         </div>
                     </div>
-
-                    <button class="delete-config-button">Eliminar ${hotspot.name || `Hotspot ${hotspot.id}`}</button>`;
+                    <div class="button-row">
+                        <button class="delete-config-button">Eliminar ${hotspot.name || `Hotspot ${hotspot.id}`}</button>
+                        <button class="scroll-to-top-button">Tornar dalt</button>
+                    </div>`;
                 hotspotsContainerEl.appendChild(item);
 
                 const pFields = item.querySelector('.passage-specific-fields');
@@ -1076,7 +1090,16 @@
                     });
                 }
 
-                item.querySelector('.delete-config-button').addEventListener('click', () => { removeHotspot(hotspot.id); hideCopyFeedback(); });
+                // Modified delete button listener to show confirmation modal
+                item.querySelector('.delete-config-button').addEventListener('click', () => { 
+                    showConfirmationModal(hotspot.id, hotspot.name || `Hotspot ${hotspot.id}`);
+                    hideCopyFeedback();
+                });
+
+                // Add event listener for the new scroll-to-top button
+                item.querySelector('.scroll-to-top-button').addEventListener('click', () => {
+                    imageEditor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
             });
         }
 
@@ -1194,7 +1217,7 @@
 
                     // Secondary Setter attributes (only if enabled or has values)
                     if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) {
-                        if (hotspot.variable2) areaTag += `            data-variable-2="${formatVariable(hotpot.variable2).replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.variable2) areaTag += `            data-variable-2="${formatVariable(hotspot.variable2).replace(/"/g, '&quot;')}"\n`;
                         if (hotspot.valor2) areaTag += `            data-valor-2="${hotspot.valor2.replace(/"/g, '&quot;')}"\n`;
                     }
                 }
@@ -1429,435 +1452,63 @@
         window.addEventListener('resize', renderHotspots);
         
         // --- JAVASCRIPT PER A LA INTERACCIÓ DEL HOTSPOT ---
-        // Function to check condition
-        function checkCondition(areaElement) {
-            const hasCondition = areaElement.hasAttribute('data-condition-var') && areaElement.hasAttribute('data-condition-val');
-            if (!hasCondition) return true; // No condition, so it's always met
+        // Global modal elements for confirmation
+        let confirmationModal = null;
+        let confirmDeleteButton = null;
+        let cancelDeleteButton = null;
+        let confirmMessage = null;
+        let currentHotspotToDeleteId = null;
 
-            const conditionVar = areaElement.getAttribute('data-condition-var');
-            const conditionVal = areaElement.getAttribute('data-condition-val');
-            
-            const actualVariableValue = window.Harlowe.get(conditionVar);
-            let expectedConditionValue;
+        // Initialize modal elements once when the script loads
+        function setupConfirmationModal() {
+            confirmationModal = document.createElement('div');
+            confirmationModal.id = 'confirmationModal';
+            confirmationModal.style.display = 'none'; // Hidden by default
 
-            if (conditionVal.toLowerCase() === 'true') {
-                expectedConditionValue = true;
-            } else if (conditionVal.toLowerCase() === 'false') {
-                expectedConditionValue = false;
-            }
-            else if (!isNaN(conditionVal) && conditionVal.trim() !== '') {
-                expectedConditionValue = Number(conditionVal);
-            } else {
-                if (conditionVal.startsWith('"') && conditionVal.endsWith('"') && conditionVal.length > 1) {
-                    expectedConditionValue = conditionVal.substring(1, conditionVal.length - 1);
-                } else {
-                    expectedConditionValue = conditionVal;
+            const modalContent = document.createElement('div');
+            confirmMessage = document.createElement('p');
+            confirmMessage.style.marginBottom = '20px';
+            modalContent.appendChild(confirmMessage);
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.justifyContent = 'space-around';
+
+            cancelDeleteButton = document.createElement('button');
+            cancelDeleteButton.id = 'cancelDeleteButton';
+            cancelDeleteButton.textContent = 'No!';
+            cancelDeleteButton.addEventListener('click', hideConfirmationModal);
+            buttonContainer.appendChild(cancelDeleteButton);
+
+            confirmDeleteButton = document.createElement('button');
+            confirmDeleteButton.id = 'confirmDeleteButton';
+            confirmDeleteButton.textContent = 'Eliminar';
+            confirmDeleteButton.addEventListener('click', () => {
+                if (currentHotspotToDeleteId !== null) {
+                    removeHotspot(currentHotspotToDeleteId);
                 }
-            }
-            
-            let compareVariableValue = actualVariableValue;
-            let compareExpectedValue = expectedConditionValue;
+                hideConfirmationModal();
+            });
+            buttonContainer.appendChild(confirmDeleteButton);
 
-            if (typeof actualVariableValue === 'number' && typeof expectedConditionValue === 'string' && !isNaN(expectedConditionValue)) {
-                compareExpectedValue = Number(expectedConditionValue);
-            } else if (typeof actualVariableValue === 'string' && typeof expectedConditionValue === 'number' && !isNaN(actualVariableValue)) {
-                compareVariableValue = Number(actualVariableValue);
-            }
-
-            return (compareVariableValue === expectedConditionValue);
+            modalContent.appendChild(buttonContainer);
+            confirmationModal.appendChild(modalContent);
+            document.body.appendChild(confirmationModal);
         }
 
-        // Mouse over (mouse enter) event listener for Twine runtime
-        document.addEventListener('mouseover', (e) => {
-            if (e.target.tagName === 'AREA' && e.target.classList.contains('hotspot-item')) {
-                const twineInfoDisplay = document.getElementById('twineImageInfoDisplay');
-                let infoTextToDisplay = '';
-                let failInfoEnterToDisplay = '';
-                let visitLimitTextEnterToDisplay = '';
-                let soundToPlay = ''; // Initialize sound for mouse enter
+        function showConfirmationModal(hotspotId, hotspotName) {
+            currentHotspotToDeleteId = hotspotId;
+            confirmMessage.textContent = `Segur que vols eliminar el hotspot ${hotspotName}?`;
+            confirmationModal.style.display = 'flex';
+        }
 
-                // Determine which info/fail texts and sounds to use based on hotspot type
-                if (e.target.hasAttribute('data-passage')) {
-                    infoTextToDisplay = e.target.getAttribute('data_info');
-                    failInfoEnterToDisplay = e.target.getAttribute('text_fail_enter');
-                    soundToPlay = e.target.getAttribute('data-sound'); // Mouse enter sound for passage
-                } else if (e.target.hasAttribute('data-setter')) {
-                    infoTextToDisplay = e.target.getAttribute('data_info'); // data_info is used for mouse enter text for setters too
-                    failInfoEnterToDisplay = e.target.getAttribute('text_fail_enter');
-                    soundToPlay = e.target.getAttribute('data-sound'); // Mouse enter sound for setter
-                }
+        function hideConfirmationModal() {
+            confirmationModal.style.display = 'none';
+            currentHotspotToDeleteId = null;
+        }
 
-                // Get visit limit text for mouse enter
-                visitLimitTextEnterToDisplay = e.target.getAttribute('data-visit-limit-enter');
-
-                if (twineInfoDisplay) {
-                    let textToShow = '';
-
-                    // Check for general condition first
-                    const hasGeneralCondition = e.target.hasAttribute('data-condition-var') && e.target.hasAttribute('data-condition-val');
-                    const isGeneralConditionMet = hasGeneralCondition ? checkCondition(e.target) : true;
-
-                    // Check for visit limit
-                    const hasVisitLimit = e.target.hasAttribute('data-visit-limit');
-                    let isVisitLimitReached = false;
-                    if (hasVisitLimit) {
-                        const hotspotId = e.target.id || e.target.dataset.hotspotId; // Use ID if available, otherwise dataset ID
-                        const visitLimit = parseInt(e.target.getAttribute('data-visit-limit'));
-                        const currentVisits = window.Harlowe.get(`$visits_hotspot_${hotspotId}`) || 0; // Assume a Twine variable for visits
-                        isVisitLimitReached = currentVisits >= visitLimit;
-                    }
-
-                    if (hasGeneralCondition && !isGeneralConditionMet) {
-                        // General condition not met, prioritize fail info
-                        textToShow = failInfoEnterToDisplay || '';
-                        soundToPlay = e.target.getAttribute('data-sound-fail') || soundToPlay; // Prioritize fail sound (mouse enter)
-                    } else if (hasVisitLimit && isVisitLimitReached) {
-                        // Visit limit reached, prioritize visit limit text
-                        textToShow = visitLimitTextEnterToDisplay || '';
-                        soundToPlay = e.target.getAttribute('data-sound-fail') || soundToPlay; // Use fail sound if available, otherwise normal
-                    } else {
-                        // All conditions met or no conditions, show regular info
-                        textToShow = infoTextToDisplay || '';
-                    }
-                    
-                    if (textToShow) {
-                        window.Harlowe.set('$tempInfoDisplay', textToShow);
-                        twineInfoDisplay.style.display = 'block';
-                    } else {
-                        twineInfoDisplay.style.display = 'none';
-                        window.Harlowe.set('$tempInfoDisplay', '');
-                    }
-                }
-                // Play sound for mouse enter
-                if (soundToPlay && window.hal && window.hal.tracks && window.hal.tracks[soundToPlay]) {
-                    window.hal.tracks[soundToPlay].play();
-                }
-            }
-        });
-
-        // Mouse out event listener for Twine runtime
-        document.addEventListener('mouseout', (e) => {
-            if (e.target.tagName === 'AREA' && e.target.classList.contains('hotspot-item')) {
-                const twineInfoDisplay = document.getElementById('twineImageInfoDisplay');
-                if (twineInfoDisplay) {
-                    twineInfoDisplay.style.display = 'none';
-                    window.Harlowe.set('$tempInfoDisplay', '');
-                }
-            }
-        });
-
-
-        document.addEventListener('click', (e) => {
-            if (e.target.tagName === 'AREA' && e.target.classList.contains('hotspot-item')) {
-                const hotspotName = e.target.getAttribute('alt'); // Obtenir el text alt (nom del hotspot)
-                
-                const twineInfoDisplay = document.getElementById('twineImageInfoDisplay');
-
-                let infoText2ToDisplay = '';
-                let failInfoClicToDisplay = '';
-                let visitLimitTextClicToDisplay = '';
-                let soundToPlay = ''; // Initialize sound for click
-
-                // Determine which info/fail texts and sounds to use based on hotspot type
-                if (e.target.hasAttribute('data-passage')) {
-                    infoText2ToDisplay = e.target.getAttribute('data_info_2');
-                    failInfoClicToDisplay = e.target.getAttribute('text_fail_clic');
-                    soundToPlay = e.target.getAttribute('data-sound-click'); // Click sound for passage
-                } else if (e.target.hasAttribute('data-setter')) {
-                    infoText2ToDisplay = e.target.getAttribute('data_info_2');
-                    failInfoClicToDisplay = e.target.getAttribute('text_fail_clic');
-                    soundToPlay = e.target.getAttribute('data-sound-click'); // Click sound for setter
-                }
-
-                // Get visit limit text for click
-                visitLimitTextClicToDisplay = e.target.getAttribute('data-visit-limit-clic');
-
-                // Check for general condition
-                const hasGeneralCondition = e.target.hasAttribute('data-condition-var') && e.target.hasAttribute('data-condition-val');
-                const isGeneralConditionMet = hasGeneralCondition ? checkCondition(e.target) : true;
-
-                // Check for visit limit
-                const hasVisitLimit = e.target.hasAttribute('data-visit-limit');
-                let isVisitLimitReached = false;
-                if (hasVisitLimit) {
-                    const hotspotId = e.target.id || e.target.dataset.hotspotId; // Use ID if available, otherwise dataset ID
-                    const visitLimit = parseInt(e.target.getAttribute('data-visit-limit'));
-                    const currentVisits = window.Harlowe.get(`$visits_hotspot_${hotspotId}`) || 0; // Assume a Twine variable for visits
-                    isVisitLimitReached = currentVisits >= visitLimit;
-                }
-
-                let preventAction = false;
-                let textToShow = '';
-
-                if (hasGeneralCondition && !isGeneralConditionMet) {
-                    // General condition not met
-                    textToShow = failInfoClicToDisplay || '';
-                    soundToPlay = e.target.getAttribute('data-sound-click-fail') || soundToPlay; // Prioritize fail sound (click)
-                    preventAction = true;
-                } else if (hasVisitLimit && isVisitLimitReached) {
-                    // Visit limit reached
-                    textToShow = visitLimitTextClicToDisplay || '';
-                    soundToPlay = e.target.getAttribute('data-sound-click-fail') || soundToPlay; // Use fail sound if available, otherwise normal
-                    preventAction = true;
-                } else {
-                    // All conditions met or no conditions, show regular info
-                    textToShow = infoText2ToDisplay || '';
-                }
-
-                if (twineInfoDisplay) {
-                    if (textToShow) {
-                        window.Harlowe.set('$tempInfoDisplay', textToShow);
-                        twineInfoDisplay.style.display = 'block';
-                    } else {
-                        twineInfoDisplay.style.display = 'none';
-                        window.Harlowe.set('$tempInfoDisplay', '');
-                    }
-                }
-
-                // Play sound for click
-                if (soundToPlay && window.hal && window.hal.tracks && window.hal.tracks[soundToPlay]) {
-                    window.hal.tracks[soundToPlay].play();
-                }
-
-                if (preventAction) {
-                    console.log(`Acción prevenida para el hotspot: ${hotspotName} (condición no cumplida o límite de visitas alcanzado).`);
-                    return; // Stop execution if action is prevented
-                }
-
-                // Proceed with action only if all conditions are met
-                if (e.target.hasAttribute('data-passage')) {
-                    const linksInOcult = document.querySelectorAll('#Ocult a');
-                    let foundLink = null;
-                    const targetPassageValue = e.target.getAttribute('data-passage');
-                    for (let i = 0; i < linksInOcult.length; i++) {
-                        if (linksInOcult[i].textContent.trim() === targetPassageValue) {
-                            foundLink = linksInOcult[i];
-                            break;
-                        }
-                    }
-                    if (foundLink) {
-                        foundLink.click();
-                    } else {
-                        console.warn(`No se encontró el link de Harlowe oculto para el hotspot de pasaje: ${hotspotName}. Buscado: ${targetPassageValue}`);
-                    }
-
-                    // Secondary setter logic for passage type
-                    const secondaryVariableName = e.target.getAttribute('data-variable-2');
-                    const secondaryRawValue = e.target.getAttribute('data-valor-2');
-
-                    if (secondaryVariableName && secondaryRawValue !== null && typeof window.Harlowe !== 'undefined' && typeof window.Harlowe.set === 'function' && typeof window.Harlowe.get === 'function') {
-                        const secondaryTrimmedRawValue = secondaryRawValue.trim();
-                        const arithmeticOperators = ['+', '-', '*', '/', '%'];
-                        const startsWithArithmeticOperatorSecondary = arithmeticOperators.some(op => secondaryTrimmedRawValue.startsWith(op));
-
-                        if (startsWithArithmeticOperatorSecondary) {
-                            const operator = secondaryTrimmedRawValue.charAt(0);
-                            const operandStr = secondaryTrimmedRawValue.substring(1).trim();
-                            const operand = Number(operandStr);
-
-                            if (!isNaN(operand)) {
-                                let currentValue = Number(window.Harlowe.get(secondaryVariableName));
-                                if (isNaN(currentValue)) {
-                                    console.warn(`La variable secundaria '${secondaryVariableName}' no es un número. Se inicializa a 0 para realizar la operación aritmética.`);
-                                    window.Harlowe.set(secondaryVariableName, 0);
-                                    currentValue = 0;
-                                }
-
-                                let newValue;
-                                switch (operator) {
-                                    case '+': newValue = currentValue + operand; break;
-                                    case '-': newValue = currentValue - operand; break;
-                                    case '*': newValue = currentValue * operand; break;
-                                    case '/':
-                                        if (operand === 0) {
-                                            console.warn(`División por cero en la variable secundaria '${secondaryVariableName}'.`);
-                                            return;
-                                        }
-                                        newValue = currentValue / operand;
-                                        break;
-                                    case '%':
-                                        if (operand === 0) {
-                                            console.warn(`Módulo por cero en la variable secundaria '${secondaryVariableName}'.`);
-                                            return;
-                                        }
-                                        newValue = currentValue % operand;
-                                        break;
-                                    default:
-                                        console.warn(`Operador aritmético desconocido para la variable secundaria: ${operator}`);
-                                        return;
-                                }
-                                window.Harlowe.set(secondaryVariableName, newValue);
-                                console.log(`Variable de Twine secundaria '${secondaryVariableName}' actualizada aritméticamente a:`, newValue);
-                            } else {
-                                console.warn(`Operando inválido para la operación aritmética de la variable secundaria: ${operandStr}`);
-                            }
-                        } else {
-                            let parsedValue;
-                            if (!isNaN(secondaryTrimmedRawValue) && secondaryTrimmedRawValue !== '') {
-                                parsedValue = Number(secondaryTrimmedRawValue);
-                            } else {
-                                if (secondaryTrimmedRawValue.startsWith('"') && secondaryTrimmedRawValue.endsWith('"') && secondaryTrimmedRawValue.length > 1) {
-                                    parsedValue = secondaryTrimmedRawValue.substring(1, secondaryTrimmedRawValue.length - 1);
-                                } else {
-                                    parsedValue = secondaryTrimmedRawValue;
-                                }
-                            }
-                            window.Harlowe.set(secondaryVariableName, parsedValue);
-                            console.log(`Variable de Twine secundaria '${secondaryVariableName}' actualizada a:`, parsedValue);
-                        }
-                    } else if (secondaryVariableName && secondaryRawValue !== null) {
-                        console.warn(`No se pudo actualizar la variable secundaria de Twine. Harlowe.set/get no disponible o secondaryVariableName inválido.`);
-                    }
-
-                } else if (e.target.hasAttribute('data_variable') && e.target.hasAttribute('data_valor')) {
-                    // Primary setter logic (remains the same for setter type)
-                    const variableName = e.target.getAttribute('data_variable');
-                    const rawValue = e.target.getAttribute('data_valor');
-                    
-                    if (!variableName || typeof window.Harlowe === 'undefined' || typeof window.Harlowe.set !== 'function' || typeof window.Harlowe.get !== 'function') {
-                        console.warn(`No se pudo actualizar la variable de Twine. Harlowe.set/get no disponible o variableName inválido.`);
-                        return;
-                    }
-
-                    const trimmedRawValue = rawValue === null ? "" : rawValue.trim();
-                    const arithmeticOperators = ['+', '-', '*', '/', '%'];
-                    const startsWithArithmeticOperator = arithmeticOperators.some(op => trimmedRawValue.startsWith(op));
-
-                    if (startsWithArithmeticOperator) {
-                        const operator = trimmedRawValue.charAt(0);
-                        const operandStr = trimmedRawValue.substring(1).trim();
-                        const operand = Number(operandStr);
-
-                        if (!isNaN(operand)) {
-                            let currentValue = Number(window.Harlowe.get(variableName));
-                            if (isNaN(currentValue)) {
-                                console.warn(`La variable '${variableName}' no es un número. Se inicializa a 0 para realizar la operación aritmética.`);
-                                window.Harlowe.set(variableName, 0);
-                                currentValue = 0;
-                            }
-
-                            let newValue;
-                            switch (operator) {
-                                case '+': newValue = currentValue + operand; break;
-                                case '-': newValue = currentValue - operand; break;
-                                case '*': newValue = currentValue * operand; break;
-                                case '/': 
-                                    if (operand === 0) {
-                                        console.warn(`División por cero en la variable '${variableName}'.`);
-                                        return;
-                                    }
-                                    newValue = currentValue / operand; 
-                                    break;
-                                case '%': 
-                                    if (operand === 0) {
-                                        console.warn(`Módulo por cero en la variable '${variableName}'.`);
-                                        return;
-                                    }
-                                    newValue = currentValue % operand; 
-                                    break;
-                                default:
-                                    console.warn(`Operador aritmético desconocido: ${operator}`);
-                                    return;
-                            }
-                            window.Harlowe.set(variableName, newValue);
-                            console.log(`Variable de Twine '${variableName}' actualizada aritméticamente a:`, newValue);
-                        } else {
-                            console.warn(`Operando inválido para la operación aritmética: ${operandStr}`);
-                        }
-                    } else {
-                        let parsedValue;
-                        if (!isNaN(trimmedRawValue) && trimmedRawValue !== '') {
-                            parsedValue = Number(trimmedRawValue);
-                        } else {
-                            if (trimmedRawValue.startsWith('"') && trimmedRawValue.endsWith('"') && trimmedRawValue.length > 1) {
-                                parsedValue = trimmedRawValue.substring(1, trimmedRawValue.length - 1);
-                            } else {
-                                parsedValue = trimmedRawValue;
-                            }
-                        }
-                        window.Harlowe.set(variableName, parsedValue);
-                        console.log(`Variable de Twine '${variableName}' actualizada a:`, parsedValue);
-                    }
-
-                    // Secondary setter logic (remains the same for setter type)
-                    const secondaryVariableName = e.target.getAttribute('data-variable-2');
-                    const secondaryRawValue = e.target.getAttribute('data-valor-2');
-
-                    if (secondaryVariableName && secondaryRawValue !== null) {
-                        const secondaryTrimmedRawValue = secondaryRawValue.trim();
-                        const arithmeticOperators = ['+', '-', '*', '/', '%'];
-                        const startsWithArithmeticOperatorSecondary = arithmeticOperators.some(op => secondaryTrimmedRawValue.startsWith(op));
-
-                        if (startsWithArithmeticOperatorSecondary) {
-                            const operator = secondaryTrimmedRawValue.charAt(0);
-                            const operandStr = secondaryTrimmedRawValue.substring(1).trim();
-                            const operand = Number(operandStr);
-
-                            if (!isNaN(operand)) {
-                                let currentValue = Number(window.Harlowe.get(secondaryVariableName));
-                                if (isNaN(currentValue)) {
-                                    console.warn(`La variable secundaria '${secondaryVariableName}' no es un número. Se inicializa a 0 para realizar la operación aritmética.`);
-                                    window.Harlowe.set(secondaryVariableName, 0);
-                                    currentValue = 0;
-                                }
-
-                                let newValue;
-                                switch (operator) {
-                                    case '+': newValue = currentValue + operand; break;
-                                    case '-': newValue = currentValue + operand; break;
-                                    case '*': newValue = currentValue * operand; break;
-                                    case '/':
-                                        if (operand === 0) {
-                                            console.warn(`División por cero en la variable secundaria '${secondaryVariableName}'.`);
-                                            return;
-                                        }
-                                        newValue = currentValue / operand;
-                                        break;
-                                    case '%':
-                                        if (operand === 0) {
-                                            console.warn(`Módulo por cero en la variable secundaria '${secondaryVariableName}'.`);
-                                            return;
-                                        }
-                                        newValue = currentValue % operand;
-                                        break;
-                                    default:
-                                        console.warn(`Operador aritmético desconocido para la variable secundaria: ${operator}`);
-                                        return;
-                                }
-                                window.Harlowe.set(secondaryVariableName, newValue);
-                                console.log(`Variable de Twine secundaria '${secondaryVariableName}' actualizada aritméticamente a:`, newValue);
-                            } else {
-                                console.warn(`Operando inválido para la operación aritmética de la variable secundaria: ${operandStr}`);
-                            }
-                        } else {
-                            let parsedValue;
-                            if (!isNaN(secondaryTrimmedRawValue) && secondaryTrimmedRawValue !== '') {
-                                parsedValue = Number(secondaryTrimmedRawValue);
-                            } else {
-                                if (secondaryTrimmedRawValue.startsWith('"') && secondaryTrimmedRawValue.endsWith('"') && secondaryTrimmedRawValue.length > 1) {
-                                    parsedValue = secondaryTrimmedRawValue.substring(1, secondaryTrimmedRawValue.length - 1);
-                                } else {
-                                    parsedValue = secondaryTrimmedRawValue;
-                                }
-                            }
-                            window.Harlowe.set(secondaryVariableName, parsedValue);
-                            console.log(`Variable de Twine secundaria '${secondaryVariableName}' actualizada a:`, parsedValue);
-                        }
-                    }
-
-                    // Update info display for the setter (existing logic)
-                    if (twineInfoDisplay) {
-                        if (infoText2ToDisplay) { // Show click info for setter
-                            window.Harlowe.set('$tempInfoDisplay', infoText2ToDisplay);
-                            twineInfoDisplay.style.display = 'block';
-                        } else {
-                            twineInfoDisplay.style.display = 'none';
-                            window.Harlowe.set('$tempInfoDisplay', ''); // Clear display if no info
-                        }
-                    }
-                }
-            }
-        });
+        // Call setupConfirmationModal on page load
+        document.addEventListener('DOMContentLoaded', setupConfirmationModal);
         // --- FI DEL JAVASCRIPT ---
     </script>
 </body>
