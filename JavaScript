@@ -5,8 +5,12 @@ jQuery(document).ready(function () {
         if (State.variables.hotspotClicks === undefined) {
             State.variables.hotspotClicks = {};
         }
+        // NOU: Inicialitza la variable de transició temporal
+        if (State.variables.tempPassageTransition === undefined) {
+            State.variables.tempPassageTransition = "";
+        }
     } else {
-        console.error("ERROR: State.variables no està definit. Els comptadors de hotspot no funcionaran.");
+        console.error("ERROR: State.variables no està definit. Els comptadors de hotspot i les transicions no funcionaran.");
     }
 
 
@@ -73,7 +77,7 @@ jQuery(document).ready(function () {
             } catch (e) {
                 console.error("ERROR: Error en reproduir el so amb HAL:", soundId, e.message);
             }
-        } else if (soundId) { // Changed from else if (soundId) to just else as it's meant for when HAL is not available
+        } else if (soundId) {
             console.warn("ADVERTENCIA: L'API de HAL no està disponible per al so:", soundId);
         }
     }
@@ -90,7 +94,7 @@ jQuery(document).ready(function () {
         }
     }
     
-    // NOU: Funció per aturar tots els sons de hotspots actius (útil en canvis de passatge)
+    // Funció per aturar tots els sons de hotspots actius (útil en canvis de passatge)
     function stopAllHotspotSounds() {
         jQuery('.hotspot-item').each(function() {
             const soundId = jQuery(this).data('sound');
@@ -128,7 +132,7 @@ jQuery(document).ready(function () {
     }
 
 
-    // NOU: Funció per executar les operacions de setter d'un hotspot
+    // Funció per executar les operacions de setter d'un hotspot
     function executeHotspotSetters(hotspotElement) {
         const setterRaw = jQuery(hotspotElement).get(0).dataset.setter;
         const dataVariable2 = jQuery(hotspotElement).data('variable-2');
@@ -279,6 +283,7 @@ jQuery(document).ready(function () {
         const soundFailId = jQuery(this).data('sound-fail'); // So de mouseenter fallat
         const soundClickId = jQuery(this).data('sound-click'); // NOU: So de clic exitós
         const soundClickFailId = jQuery(this).data('sound-click-fail'); // NOU: So de clic fallat
+        const transitionArrive = jQuery(this).data('transition-arrive'); // NOU: Transició d'arribada
 
         // ATURA ELS SONS DE HOVER (mouse enter/fail) abans de qualsevol altra cosa en aquest hotspot
         stopHotspotSound(soundId);
@@ -315,6 +320,10 @@ jQuery(document).ready(function () {
                 if (soundClickId) {
                     playHotspotSound(soundClickId); 
                 }
+                
+                // NOU: Estableix la transició d'arribada abans de navegar
+                State.variables.tempPassageTransition = transitionArrive || ""; 
+
                 State.variables.retornA = passageName; 
                 const link = jQuery("tw-link").filter(function () {
                     const text = jQuery(this).text().trim();
@@ -406,7 +415,7 @@ jQuery(document).ready(function () {
     });
 
     // Esdeveniments de passatge
-    // NOU: Atura tots els sons dels hotspots quan un passatge s'inicia o es mostra
+    // NOU: Atura tots els sons dels hotspots i neteja la variable de transició quan un passatge s'inicia o es mostra
     jQuery(document).on(':passagedisplay', function() {
         stopAllHotspotSounds(); // Atura tots els sons en el display del passatge
         if (typeof State !== 'undefined' && State.variables) {
@@ -419,10 +428,14 @@ jQuery(document).ready(function () {
         stopAllHotspotSounds(); // Atura tots els sons en la inicialització del passatge (aquesta és més robusta)
         if (typeof State !== 'undefined' && State.variables) {
             State.variables.tempInfoDisplay = '';
+            // NOU: Neteja la variable de transició en la inicialització del passatge
+            // Aquesta és una segona línia de defensa per si la de Harlowe no es crida per alguna raó.
+            State.variables.tempPassageTransition = ""; 
         }
         jQuery('#' + TWINE_IMAGE_INFO_DISPLAY_ID).empty().hide(); 
     });
 });
+
 
 
 
