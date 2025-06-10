@@ -1,6 +1,7 @@
 html, body {
   background-color: black; /* O #000000 */
-  overflow: hidden; /* Això amaga qualsevol barra de desplaçament */
+  overflow-x: hidden; /* Evita barres de desplaçament horitzontals durant les animacions */
+  position: relative; /* Assegura que les transformacions funcionin correctament */
 }
 
 /* Amaga completament la barra lateral, incloent el botó de "tornar enrere" */
@@ -11,11 +12,11 @@ tw-sidebar {
 /* Assegura't que el cos del Twine no tingui marges ni padding */
 tw-story {
     max-width: 100%;
-  	margin-top: 15px !important;  
+  	margin-top: 15px !important;
   	margin-left: 40px !important;
     padding: 0 !important;
     box-sizing: border-box;
-  
+
 }
 
 /* Fes que el passatge ocupi el 100% de l'altura i l'ample
@@ -41,10 +42,10 @@ tw-story {
     flex-direction: column;
     align-items: center;     /* Centra elements fills (com la imatge) horitzontalment */
     justify-content: center; /* Centra elements fills verticalment (si hi ha espai) */
-    
+
     line-height: 0;
     text-align: center; /* Afegeix text-align per si hi ha text simple directament aquí */
-    
+
     width: 100%; /* Ocupa tot l'ample del pare */
     height: 100%; /* Ocupa tota l'altura del pare per permetre un bon centrat vertical */
     flex-grow: 1; /* Permet que s'expandeixi si el pare és un flex-container */
@@ -61,20 +62,6 @@ tw-story {
 }
 
 /* Element de text sota la imatge */
-/*
-#twineImageInfoDisplay {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    margin-top: 5px;
-    font-size: 1em;
-    text-align: center;
-    display: none;
-    box-sizing: border-box;
-}
-*/
-
 #twineImageInfoDisplay {
 		display: none;
         position: absolute;
@@ -93,7 +80,6 @@ tw-story {
 }
 
 
-
 /* Les regles de hotspots les deixem tal qual, no influeixen en el centrat general */
 .hotspot-overlay {
     position: absolute;
@@ -107,6 +93,7 @@ tw-story {
     cursor: pointer;
 
 }
+
 
 
 
