@@ -430,7 +430,8 @@
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;"); // For single quotes
+                .replace(/'/g, "&#039;")
+                .replace(/`/g, "&#x60;"); // Escape backticks
         }
 
         // Event listener for image upload
@@ -481,7 +482,17 @@
         imageEditor.addEventListener('mousedown', (e) => {
             hideCopyFeedback(); // Hide feedback on interaction
             if (imageDisplay.style.display === 'none' || !imageDisplay.src) return; // Only interact if an image is loaded
-            if (e.target.classList.contains('hotspot-delete-button-visual')) return; // Ignore clicks on delete button
+            
+            // Modified: If the click target is the delete button, trigger confirmation and prevent other actions.
+            if (e.target.classList.contains('hotspot-delete-button-visual')) {
+                const hotspotId = parseInt(e.target.parentElement.dataset.hotspotId);
+                const hotspot = hotspots.find(h => h.id === hotspotId);
+                if (hotspot) {
+                    showConfirmationModal(hotspot.id, hotspot.name || `Hotspot ${hotspot.id}`);
+                }
+                e.stopPropagation(); // Prevent drawing or dragging
+                return;
+            }
 
             hasMovedDuringInteraction = false; // Reset flag at the start of a new interaction
 
@@ -803,7 +814,8 @@
                     delBtn.classList.add('hotspot-delete-button-visual');
                     delBtn.textContent = 'X'; // Keep it as 'X'
                     delBtn.title = `Eliminar aquest hotspot (${hotspot.name || `Hotspot ${hotspot.id}`})`;
-                    delBtn.addEventListener('click', (e) => { e.stopPropagation(); removeHotspot(hotspot.id); });
+                    // Changed: The event listener is now handled by the imageEditor mousedown.
+                    // delBtn.addEventListener('click', (e) => { e.stopPropagation(); removeHotspot(hotspot.id); }); 
                     visRect.appendChild(delBtn);
 
                     // Add resize handle
@@ -1268,7 +1280,7 @@
                 const altText = escapeHtml(hotspot.name || `Hotspot ${hotspot.id}`);
                 
                 // Add comment for each hotspot in HTML comment format
-                twineCode += `    <!-- ${escapeHtml(hotspot.name || `Hotspot ${hotspot.id}`)} -->\n`;
+                twineCode += `    <!-- ${escapeHtml(hotspot.name) || `Hotspot ${hotspot.id}`} -->\n`; // FIX: Apply escapeHtml to hotspot.name here
                 let areaTag = `        <area shape="rect"\n`;
                 areaTag += `            coords="${coords}"\n`;
                 areaTag += `            alt="${altText}"\n`;
@@ -1378,19 +1390,23 @@
             hotspots.forEach(hotspot => {
                 if (hotspot.type === 'passage' && hotspot.value) {
                     const passageNameForLink = hotspot.value.replace(/"/g, '\\"');
-                    let harloweLinkContent = '';
-                    
-                    // Add t8n-arrive instruction
+                    const transitionParts = [];
+
+                    // Add (t8n-arrive: ...) if applicable
                     if (hotspot.transitionArrive && hotspot.transitionArrive !== 'Cap' && hotspot.transitionArrive !== 'instant') {
-                         harloweLinkContent += `(t8n-arrive: "${hotspot.transitionArrive.replace(/"/g, '\\"')}")`;
+                        transitionParts.push(`(t8n-arrive: "${hotspot.transitionArrive.replace(/"/g, '\\"')}")`);
                     }
-                    // Add t8n-depart instruction
+                    // Add (t8n-depart: ...) if applicable
                     if (hotspot.transition && hotspot.transition !== 'Cap' && hotspot.transition !== 'instant') {
-                        harloweLinkContent += `+(t8n-depart: "${hotspot.transition.replace(/"/g, '\\"')}")`;
+                        transitionParts.push(`(t8n-depart: "${hotspot.transition.replace(/"/g, '\\"')}")`);
                     }
                     
-                    // Add goto instruction
-                    harloweLinkContent += `(goto: "${passageNameForLink}")`;
+                    let harloweLinkContent = '';
+                    if (transitionParts.length > 0) {
+                        harloweLinkContent = transitionParts.join('+') + `(goto: "${passageNameForLink}")`;
+                    } else {
+                        harloweLinkContent = `(goto: "${passageNameForLink}")`;
+                    }
 
                     let harloweLink = '';
                     // Only generate conditional link if enabled or has values
