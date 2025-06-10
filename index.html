@@ -10,6 +10,7 @@
             margin: 20px;
             background-color: #f4f4f4;
             color: #333;
+            font-size: 0.95em; /* Base font size for the body */
         }
         h1, h2 {
             color: #2c3e50;
@@ -98,6 +99,7 @@
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
+            font-size: 1.05em; /* Slightly larger than text fields */
         }
         .hotspot-item input[type="text"],
         .hotspot-item select,
@@ -108,6 +110,7 @@
             margin-bottom: 10px; /* Kept existing margin-bottom for input fields */
             border: 1px solid #ccc;
             border-radius: 4px;
+            font-size: 1em; /* Standardized font size for inputs */
         }
         .hotspot-item textarea {
             resize: vertical;
@@ -219,6 +222,10 @@
         .column .darkblue-label { /* NEW: Specific class for dark blue labels */
             color: darkblue; /* Dark blue for the new labels */
         }
+        .column .darkyellow-label { /* NEW: Specific class for dark yellow labels */
+            color: darkorange; /* Changed from #DAA520 to darkorange */
+        }
+
 
         /* Styles for section separation */
         .hotspot-section {
@@ -244,6 +251,7 @@
         .column {
             display: flex;
             flex-direction: column;
+            /* No padding-top here. The blank div will handle the spacing. */
         }
         /* Specific style for condition fields to stack vertically */
         .condition-inputs-wrapper {
@@ -256,24 +264,35 @@
         }
         /* Style for the checkbox container to ensure proper alignment */
         .secondary-variable-toggle-container,
-        .condition-toggle-container { /* Added condition-toggle-container */
+        .condition-toggle-container,
+        .visit-limit-toggle-container { /* Added visit-limit-toggle-container */
             margin-top: 10px; /* Space above the checkbox */
             margin-bottom: 10px; /* Space below the checkbox */
         }
+        /* Specific style for the label containing the checkbox for "Activar Condició" */
+        .condition-toggle-container label {
+            color: #8B0000 !important; /* Force dark red for the entire label content */
+            display: flex; /* Keep this for alignment */
+            align-items: center;
+            font-weight: bold;
+        }
         .secondary-variable-toggle-container label,
-        .condition-toggle-container label { /* Added condition-toggle-container */
+        .visit-limit-toggle-container label { /* Added visit-limit-toggle-container */
             display: flex;
             align-items: center;
             font-weight: bold;
         }
         .secondary-variable-toggle-container input[type="checkbox"],
-        .condition-toggle-container input[type="checkbox"] { /* Added condition-toggle-container */
+        .condition-toggle-container input[type="checkbox"],
+        .visit-limit-toggle-container input[type="checkbox"] { /* Added visit-limit-toggle-container */
             margin-right: 8px; /* Space between checkbox and label text */
             width: auto; /* Reset width for checkbox */
             margin-bottom: 0; /* Remove bottom margin for checkbox */
         }
+        /* The strong-red-label class is no longer strictly necessary if the direct rule works,
+           but keeping it for backward compatibility if other elements use it. */
         .strong-red-label {
-            color: #8B0000; /* Darker red */
+            color: #8B0000 !important; /* Darker red, force with !important */
         }
 
         /* Styles for the new button row in hotspot-item */
@@ -399,6 +418,19 @@
         // Function to hide the "Code copied!" feedback
         function hideCopyFeedback() {
             copyFeedback.classList.remove('show');
+        }
+
+        // Function to escape HTML special characters for attribute values
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') {
+                return unsafe; // Return as is if not a string (e.g., numbers, booleans)
+            }
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;"); // For single quotes
         }
 
         // Event listener for image upload
@@ -588,7 +620,7 @@
                         valor: '', // New field for setter variable value
                         titleTextSetter: '',
                         soundSetter: '', // Initialize soundSetter property (mouse enter)
-                        soundClickSetter: '', // NEW: Sound for click (setter)
+                        hotspotSoundClickSetter: '', // NEW: Sound for click (setter)
                         infoTextSetter: '', // This field will now store the Harlowe text (mouse enter)
                         infoTextSetter2: '', // New field for alternative info text for setter (click)
                         
@@ -612,6 +644,7 @@
                         visitLimit: '',
                         visitLimitTextEnter: '',
                         visitLimitTextClic: '',
+                        enableVisitLimit: false, // New field for enabling/disabling visit limit
 
                         // Secondary Setter fields
                         variable2: '',
@@ -683,12 +716,13 @@
                     conditionFieldsContainer.classList.toggle('hidden-field', !hotspot.enableConditionVariable);
                     enableConditionCheckbox.checked = hotspot.enableConditionVariable; // Sync checkbox state
                 }
-
-                const visitLimitInput = passageSection.querySelector('[data-field="visitLimit"]');
-                const visitLimitTextContainer = passageSection.querySelector('.visit-limit-text-fields-container');
-                if (visitLimitInput && visitLimitTextContainer) {
-                    const hasValue = visitLimitInput.value.trim() !== '' && parseInt(visitLimitInput.value) > 0;
-                    visitLimitTextContainer.classList.toggle('hidden-field', !hasValue);
+                
+                // New logic for visit limit section visibility (Passage)
+                const visitLimitSectionContainer = passageSection.querySelector('.visit-limit-section-container');
+                const enableVisitLimitCheckbox = passageSection.querySelector('[data-field="enableVisitLimit"]');
+                if (visitLimitSectionContainer && enableVisitLimitCheckbox) {
+                    visitLimitSectionContainer.classList.toggle('hidden-field', !hotspot.enableVisitLimit);
+                    enableVisitLimitCheckbox.checked = hotspot.enableVisitLimit; // Sync checkbox state
                 }
             }
 
@@ -708,11 +742,12 @@
                     enableConditionCheckbox.checked = hotspot.enableConditionVariable; // Sync checkbox state
                 }
 
-                const visitLimitInput = setterSection.querySelector('[data-field="visitLimit"]');
-                const visitLimitTextContainer = setterSection.querySelector('.visit-limit-text-fields-container');
-                if (visitLimitInput && visitLimitTextContainer) {
-                    const hasValue = visitLimitInput.value.trim() !== '' && parseInt(visitLimitInput.value) > 0;
-                    visitLimitTextContainer.classList.toggle('hidden-field', !hasValue);
+                // New logic for visit limit section visibility (Setter)
+                const visitLimitSectionContainer = setterSection.querySelector('.visit-limit-section-container');
+                const enableVisitLimitCheckbox = setterSection.querySelector('[data-field="enableVisitLimit"]');
+                if (visitLimitSectionContainer && enableVisitLimitCheckbox) {
+                    visitLimitSectionContainer.classList.toggle('hidden-field', !hotspot.enableVisitLimit);
+                    enableVisitLimitCheckbox.checked = hotspot.enableVisitLimit; // Sync checkbox state
                 }
             }
         }
@@ -788,52 +823,59 @@
 
                 item.innerHTML = `
                     <div class="hotspot-section general-settings">
-                        <label>Nom Hotspot:</label><input type="text" data-field="name" value="${hotspot.name || ''}" placeholder="Ej: Puerta">
+                        <label>Nom Hotspot:</label><input type="text" data-field="name" value="${escapeHtml(hotspot.name || '')}" placeholder="Ej: Puerta">
                         <label>Acció:</label><select data-field="type"><option value="passage" ${hotspot.type==='passage'?'selected':''}>Anar Passatge</option><option value="setter" ${hotspot.type==='setter'?'selected':''}>Canviar Variable</option></select>
                     </div>
                     
                     <div class="hotspot-section setter-specific-fields ${hotspot.type==='setter'?'':'hidden-field'}">
                         <div class="two-column-layout">
                             <div class="column">
-                                <label>Nom de la variable (ej: $nom_variable):</label><input type="text" data-field="variable" value="${hotspot.variable || ''}" placeholder="Ej: $punts">
-                                <label>Valor de la variable (Número o text. Es pot sumar. Ej: +=100):</label><input type="text" data-field="valor" value="${hotspot.valor || ''}" placeholder="Ej: 1000 o &quot;text&quot;">
+                                <div style="height: 1.5em;"></div> <!-- Blank line 1 -->
+                                <div style="height: 1.5em;"></div> <!-- Blank line 2 -->
+                                <label>Nom de la variable (ej: $nom_variable):</label><input type="text" data-field="variable" value="${escapeHtml(hotspot.variable || '')}" placeholder="Ej: $punts">
+                                <label>Valor de la variable (Número o text. Es pot sumar. Ej: +=100):</label><input type="text" data-field="valor" value="${escapeHtml(hotspot.valor || '')}" placeholder="Ej: 1000 o &quot;text&quot;">
                                 
                                 <label>Text (mouse enter):</label><textarea data-field="infoTextSetter">${hotspot.infoTextSetter || ''}</textarea>
                                 <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoTextSetter2">${hotspot.infoTextSetter2 || ''}</textarea>
-                                <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleTextSetter" value="${hotspot.titleTextSetter || ''}">
-                                <label>So (clic - nom àudio enregistrat a hal.tracks):</label><input type="text" data-field="soundClickSetter" value="${hotspot.soundClickSetter || ''}">
-                                <label>So (mouse enter - nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="soundSetter" value="${hotspot.soundSetter || ''}">
-
-                                <div class="secondary-variable-toggle-container">
-                                    <label class="darkblue-label">
-                                        <input type="checkbox" data-field="enableSecondaryVariable" ${hotspot.enableSecondaryVariable ? 'checked' : ''}> Variable secundària
-                                    </label>
-                                </div>
-                                <div class="secondary-variable-fields ${hotspot.enableSecondaryVariable ? '' : 'hidden-field'}">
-                                    <label class="darkblue-label">Nom de la variable (secundària):</label><input type="text" data-field="variable2" value="${hotspot.variable2 || ''}" placeholder="Ej: $objecte_agafat">
-                                    <label class="darkblue-label">Valor de la variable (secundària):</label><input type="text" data-field="valor2" value="${hotspot.valor2 || ''}" placeholder="Ej: &quot;espasa&quot;">
-                                </div>
+                                <label>So (clic - nom àudio enregistrat a hal.tracks):</label><input type="text" data-field="soundClickSetter" value="${escapeHtml(hotspot.soundClickSetter || '')}">
+                                <label>So (mouse enter - nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="soundSetter" value="${escapeHtml(hotspot.soundSetter || '')}">
+                                <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleTextSetter" value="${escapeHtml(hotspot.titleTextSetter || '')}">
                             </div>
                             <div class="column condition-inputs-wrapper">
-                                <!-- NEW: Checkbox for Condition Variable - Moved to the second column -->
+                                <!-- NEW: Checkbox for Condition Variable -->
                                 <div class="condition-toggle-container">
                                     <label class="strong-red-label">
                                         <input type="checkbox" data-field="enableConditionVariable" ${hotspot.enableConditionVariable ? 'checked' : ''}> Activar Condició
                                     </label>
                                 </div>
                                 <div class="condition-fields-container ${hotspot.enableConditionVariable ? '' : 'hidden-field'}">
-                                    <label class="condition-label">Variable (Condició):</label><input type="text" data-field="setterConditionVariable" value="${hotspot.setterConditionVariable || ''}" placeholder="Ej: $clau">
-                                    <label class="condition-label">Valor (Condició):</label><input type="text" data-field="setterConditionValue" value="${hotspot.setterConditionValue || ''}" placeholder="Ej: true o 1">
+                                    <label class="condition-label">Variable (Condició):</label><input type="text" data-field="setterConditionVariable" value="${escapeHtml(hotspot.setterConditionVariable || '')}" placeholder="Ej: $clau">
+                                    <label class="condition-label">Valor (Condició):</label><input type="text" data-field="setterConditionValue" value="${escapeHtml(hotspot.setterConditionValue || '')}" placeholder="Ej: true o 1">
                                     <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="setterFailInfoEnter">${hotspot.setterFailInfoEnter || ''}</textarea>
                                     <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="setterFailInfo">${hotspot.setterFailInfo || ''}</textarea>
-                                    <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundClickFail" value="${hotspot.setterSoundClickFail || ''}">
-                                    <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundFail" value="${hotspot.setterSoundFail || ''}">
+                                    <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundClickFail" value="${escapeHtml(hotspot.setterSoundClickFail || '')}">
+                                    <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundFail" value="${escapeHtml(hotspot.setterSoundFail || '')}">
                                 </div>
-                                
-                                <label class="limit-label">Límit de visites:</label><input type="number" data-field="visitLimit" value="${hotspot.visitLimit || ''}" placeholder="">
-                                <div class="visit-limit-text-fields-container ${hotspot.visitLimit && parseInt(hotspot.visitLimit) > 0 ? '' : 'hidden-field'}">
+                                <!-- Visit Limit fields (second column) -->
+                                <div class="visit-limit-toggle-container">
+                                    <label class="darkyellow-label">
+                                        <input type="checkbox" data-field="enableVisitLimit" ${hotspot.enableVisitLimit ? 'checked' : ''}> Límit de visites
+                                    </label>
+                                </div>
+                                <div class="visit-limit-section-container ${hotspot.enableVisitLimit ? '' : 'hidden-field'}">
+                                    <label class="limit-label">Número de visites:</label><input type="number" data-field="visitLimit" value="${escapeHtml(hotspot.visitLimit || '')}" placeholder="">
                                     <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${hotspot.visitLimitTextEnter || ''}</textarea>
                                     <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${hotspot.visitLimitTextClic || ''}</textarea>
+                                </div>
+                                <!-- Secondary Variable fields (second column) -->
+                                <div class="secondary-variable-toggle-container">
+                                    <label class="darkblue-label">
+                                        <input type="checkbox" data-field="enableSecondaryVariable" ${hotspot.enableSecondaryVariable ? 'checked' : ''}> Variable secundària
+                                    </label>
+                                </div>
+                                <div class="secondary-variable-fields ${hotspot.enableSecondaryVariable ? '' : 'hidden-field'}">
+                                    <label class="darkblue-label">Nom de la variable (secundària):</label><input type="text" data-field="variable2" value="${escapeHtml(hotspot.variable2 || '')}" placeholder="Ej: $objecte_agafat">
+                                    <label class="darkblue-label">Valor de la variable (secundària):</label><input type="text" data-field="valor2" value="${escapeHtml(hotspot.valor2 || '')}" placeholder="Ej: &quot;espasa&quot;">
                                 </div>
                             </div>
                         </div>
@@ -842,7 +884,9 @@
                     <div class="hotspot-section passage-specific-fields ${hotspot.type==='passage'?'':'hidden-field'}">
                         <div class="two-column-layout">
                             <div class="column">
-                                <label>Passatge destí:</label><input type="text" data-field="value" value="${hotspot.value || ''}" placeholder="Ej: Bosc">
+                                <div style="height: 1.5em;"></div> <!-- Blank line 1 -->
+                                <div style="height: 1.5em;"></div> <!-- Blank line 2 -->
+                                <label>Passatge destí:</label><input type="text" data-field="value" value="${escapeHtml(hotspot.value || '')}" placeholder="Ej: Bosc">
                                 
                                 <label>Transició (al canviar de passatge):</label>
                                 <select data-field="transition">
@@ -866,19 +910,9 @@
                                 </select>
                                 <label>Text (mouse enter):</label><textarea data-field="infoText">${hotspot.infoText || ''}</textarea>
                                 <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoText2">${hotspot.infoText2 || ''}</textarea>
-                                <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleText" value="${hotspot.titleText || ''}">
-                                <label>So (clic - nom àudio enregistrat a hal.tracks):</label><input type="text" data-field="soundClick" value="${hotspot.soundClick || ''}">
-                                <label>So (mouse enter - nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="sound" value="${hotspot.sound || ''}">
-
-                                <div class="secondary-variable-toggle-container">
-                                    <label class="darkblue-label">
-                                        <input type="checkbox" data-field="enableSecondaryVariable" ${hotspot.enableSecondaryVariable ? 'checked' : ''}> Variable secundària
-                                    </label>
-                                </div>
-                                <div class="secondary-variable-fields ${hotspot.enableSecondaryVariable ? '' : 'hidden-field'}">
-                                    <label class="darkblue-label">Nom de la variable (secundària):</label><input type="text" data-field="variable2" value="${hotspot.variable2 || ''}" placeholder="Ej: $objecte_agafat">
-                                    <label class="darkblue-label">Valor de la variable (secundària):</label><input type="text" data-field="valor2" value="${hotspot.valor2 || ''}" placeholder="Ej: &quot;espasa&quot;">
-                                </div>
+                                <label>So (clic - nom àudio enregistrat a hal.tracks):</label><input type="text" data-field="soundClick" value="${escapeHtml(hotspot.soundClick || '')}">
+                                <label>So (mouse enter - nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="sound" value="${escapeHtml(hotspot.sound || '')}">
+                                <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleText" value="${escapeHtml(hotspot.titleText || '')}">
                             </div>
                             <div class="column condition-inputs-wrapper">
                                 <div class="condition-toggle-container">
@@ -887,25 +921,40 @@
                                     </label>
                                 </div>
                                 <div class="condition-fields-container ${hotspot.enableConditionVariable ? '' : 'hidden-field'}">
-                                    <label class="condition-label">Variable (Condició):</label><input type="text" data-field="passageConditionVariable" value="${hotspot.passageConditionVariable || ''}" placeholder="Ej: $clau">
-                                    <label class="condition-label">Valor (Condició):</label><input type="text" data-field="passageConditionValue" value="${hotspot.passageConditionValue || ''}" placeholder="Ej: true o 1">
+                                    <label class="condition-label">Variable (Condició):</label><input type="text" data-field="passageConditionVariable" value="${escapeHtml(hotspot.passageConditionVariable || '')}" placeholder="Ej: $clau">
+                                    <label class="condition-label">Valor (Condició):</label><input type="text" data-field="passageConditionValue" value="${escapeHtml(hotspot.passageConditionValue || '')}" placeholder="Ej: true o 1">
                                     <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="passageFailInfoEnter">${hotspot.passageFailInfoEnter || ''}</textarea>
                                     <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="passageFailInfo">${hotspot.passageFailInfo || ''}</textarea>
-                                    <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundClickFail" value="${hotspot.passageSoundClickFail || ''}">
-                                    <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundFail" value="${hotspot.passageSoundFail || ''}">
+                                    <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundClickFail" value="${escapeHtml(hotspot.passageSoundClickFail || '')}">
+                                    <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundFail" value="${escapeHtml(hotspot.passageSoundFail || '')}">
                                 </div>
-
-                                <label class="limit-label">Límit de visites:</label><input type="number" data-field="visitLimit" value="${hotspot.visitLimit || ''}" placeholder="">
-                                <div class="visit-limit-text-fields-container ${hotspot.visitLimit && parseInt(hotspot.visitLimit) > 0 ? '' : 'hidden-field'}">
+                                <!-- Visit Limit fields (second column) -->
+                                <div class="visit-limit-toggle-container">
+                                    <label class="darkyellow-label">
+                                        <input type="checkbox" data-field="enableVisitLimit" ${hotspot.enableVisitLimit ? 'checked' : ''}> Límit de visites
+                                    </label>
+                                </div>
+                                <div class="visit-limit-section-container ${hotspot.enableVisitLimit ? '' : 'hidden-field'}">
+                                    <label class="limit-label">Número de visites:</label><input type="number" data-field="visitLimit" value="${escapeHtml(hotspot.visitLimit || '')}" placeholder="">
                                     <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${hotspot.visitLimitTextEnter || ''}</textarea>
                                     <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${hotspot.visitLimitTextClic || ''}</textarea>
+                                </div>
+                                <!-- Secondary Variable fields (second column) -->
+                                <div class="secondary-variable-toggle-container">
+                                    <label class="darkblue-label">
+                                        <input type="checkbox" data-field="enableSecondaryVariable" ${hotspot.enableSecondaryVariable ? 'checked' : ''}> Variable secundària
+                                    </label>
+                                </div>
+                                <div class="secondary-variable-fields ${hotspot.enableSecondaryVariable ? '' : 'hidden-field'}">
+                                    <label class="darkblue-label">Nom de la variable (secundària):</label><input type="text" data-field="variable2" value="${escapeHtml(hotspot.variable2 || '')}" placeholder="Ej: $objecte_agafat">
+                                    <label class="darkblue-label">Valor de la variable (secundària):</label><input type="text" data-field="valor2" value="${escapeHtml(hotspot.valor2 || '')}" placeholder="Ej: &quot;espasa&quot;">
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="button-row">
-                        <button class="delete-config-button">Eliminar ${hotspot.name || `Hotspot ${hotspot.id}`}</button>
-                        <button class="scroll-to-top-button">Tornar dalt</button>
+                        <button class="delete-config-button">Eliminar ${escapeHtml(hotspot.name || `Hotspot ${hotspot.id}`)}</button>
+                        <button class="scroll-to-top-button">Anar a la imatge</button>
                     </div>`;
                 hotspotsContainerEl.appendChild(item);
 
@@ -944,7 +993,7 @@
                 });
                 
                 // Update event listeners for 'value' (passage) and 'variable', 'valor' (setter)
-                ['value', 'infoText2', 'titleText','sound','soundClick','infoText'].forEach(f => {
+                ['value','sound','soundClick', 'titleText'].forEach(f => { // titleText is now at the end
                     const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -954,6 +1003,20 @@
                         });
                     }
                 });
+
+                // Textarea fields need to be handled separately if we want to ensure escapeHtml is not applied to their content
+                // as they are parsed by Twine later, not directly as HTML attributes of the editor.
+                ['infoText', 'infoText2'].forEach(f => {
+                    const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
+                    if (element) {
+                        element.addEventListener('input', e => {
+                            hotspot[f] = e.target.value; // Store raw value for textarea
+                            generateTwineCode();
+                            hideCopyFeedback();
+                        });
+                    }
+                });
+
 
                 // Specific listener for 'transition' select element
                 const passageTransitionSelect = item.querySelector('.passage-specific-fields [data-field="transition"]');
@@ -965,11 +1028,23 @@
                     });
                 }
 
-                ['variable', 'valor', 'titleTextSetter','soundSetter','soundClickSetter','infoTextSetter','infoTextSetter2'].forEach(f => {
+                ['variable', 'valor', 'soundSetter','soundClickSetter', 'titleTextSetter'].forEach(f => { // titleTextSetter is now at the end
                     const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
                             hotspot[f] = e.target.value;
+                            generateTwineCode();
+                            hideCopyFeedback();
+                        });
+                    }
+                });
+
+                // Textarea fields for setter
+                ['infoTextSetter','infoTextSetter2'].forEach(f => {
+                    const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
+                    if (element) {
+                        element.addEventListener('input', e => {
+                            hotspot[f] = e.target.value; // Store raw value for textarea
                             generateTwineCode();
                             hideCopyFeedback();
                         });
@@ -1012,7 +1087,7 @@
 
 
                 // Passage-specific condition fields listeners
-                ['passageConditionVariable', 'passageConditionValue', 'passageFailInfo', 'passageFailInfoEnter', 'passageSoundFail', 'passageSoundClickFail'].forEach(f => {
+                ['passageConditionVariable', 'passageConditionValue', 'passageSoundFail', 'passageSoundClickFail'].forEach(f => {
                     const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -1022,9 +1097,21 @@
                         });
                     }
                 });
+                // Textarea fields for passage condition
+                ['passageFailInfo', 'passageFailInfoEnter'].forEach(f => {
+                    const element = item.querySelector(`.passage-specific-fields [data-field="${f}"]`);
+                    if (element) {
+                        element.addEventListener('input', e => {
+                            hotspot[f] = e.target.value; // Store raw value for textarea
+                            generateTwineCode();
+                            hideCopyFeedback();
+                        });
+                    }
+                });
+
 
                 // Setter-specific condition fields listeners
-                ['setterConditionVariable', 'setterConditionValue', 'setterFailInfo', 'setterFailInfoEnter', 'setterSoundFail', 'setterSoundClickFail'].forEach(f => {
+                ['setterConditionVariable', 'setterConditionValue', 'setterSoundFail', 'setterSoundClickFail'].forEach(f => {
                     const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
                     if (element) {
                         element.addEventListener('input', e => {
@@ -1034,29 +1121,56 @@
                         });
                     }
                 });
+                // Textarea fields for setter condition
+                ['setterFailInfo', 'setterFailInfoEnter'].forEach(f => {
+                    const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
+                    if (element) {
+                        element.addEventListener('input', e => {
+                            hotspot[f] = e.target.value; // Store raw value for textarea
+                            generateTwineCode();
+                            hideCopyFeedback();
+                        });
+                    }
+                });
                 
-                // Visit Limit fields listeners (common for both types)
-                // Attach to the input within the passage section
+                // Visit Limit checkbox listener
+                const pEnableVisitLimitCheckbox = pFields.querySelector('[data-field="enableVisitLimit"]');
+                if (pEnableVisitLimitCheckbox) {
+                    pEnableVisitLimitCheckbox.addEventListener('change', (e) => {
+                        hotspot.enableVisitLimit = e.target.checked;
+                        updateInnerFieldVisibility(hotspot, item);
+                        generateTwineCode();
+                        hideCopyFeedback();
+                    });
+                }
+                const sEnableVisitLimitCheckbox = sFields.querySelector('[data-field="enableVisitLimit"]');
+                if (sEnableVisitLimitCheckbox) {
+                    sEnableVisitLimitCheckbox.addEventListener('change', (e) => {
+                        hotspot.enableVisitLimit = e.target.checked;
+                        updateInnerFieldVisibility(hotspot, item);
+                        generateTwineCode();
+                        hideCopyFeedback();
+                    });
+                }
+
+                // Visit Limit text fields listeners (common for both types)
                 const pVisitLimitInput = pFields.querySelector('[data-field="visitLimit"]');
                 if (pVisitLimitInput) {
                     pVisitLimitInput.addEventListener('input', (e) => {
                         hotspot.visitLimit = e.target.value; // Update hotspot object
-                        updateInnerFieldVisibility(hotspot, item); // Call to update visibility
                         generateTwineCode();
                         hideCopyFeedback();
                     });
                 }
-                // Attach to the input within the setter section
                 const sVisitLimitInput = sFields.querySelector('[data-field="visitLimit"]');
                 if (sVisitLimitInput) {
                     sVisitLimitInput.addEventListener('input', (e) => {
                         hotspot.visitLimit = e.target.value; // Update hotspot object
-                        updateInnerFieldVisibility(hotspot, item); // Call to update visibility
                         generateTwineCode();
                         hideCopyFeedback();
                     });
                 }
-                // Also attach listeners for the visit limit text fields
+
                 const pVisitLimitTextEnter = pFields.querySelector('[data-field="visitLimitTextEnter"]');
                 const pVisitLimitTextClic = pFields.querySelector('[data-field="visitLimitTextClic"]');
                 const sVisitLimitTextEnter = sFields.querySelector('[data-field="visitLimitTextEnter"]');
@@ -1131,10 +1245,10 @@
             hotspots.forEach(hotspot => {
                 const coords = hotspot.coords;
 
-                const altText = (hotspot.name || `Hotspot ${hotspot.id}`).replace(/"/g, '&quot;');
+                const altText = escapeHtml(hotspot.name || `Hotspot ${hotspot.id}`);
                 
                 // Add comment for each hotspot in HTML comment format
-                twineCode += `    <!-- ${hotspot.name || `Hotspot ${hotspot.id}`} -->\n`;
+                twineCode += `    <!-- ${escapeHtml(hotspot.name || `Hotspot ${hotspot.id}`)} -->\n`;
                 let areaTag = `        <area shape="rect"\n`;
                 areaTag += `            coords="${coords}"\n`;
                 areaTag += `            alt="${altText}"\n`;
@@ -1145,44 +1259,44 @@
                     // Only include condition attributes if enabled or has values
                     if (hotspot.enableConditionVariable || (hotspot.passageConditionVariable && hotspot.passageConditionValue)) {
                         if (hotspot.passageConditionVariable && hotspot.passageConditionValue) {
-                            areaTag += `            data-condition-var="${formatVariable(hotspot.passageConditionVariable).replace(/"/g, '&quot;')}"\n`;
-                            areaTag += `            data-condition-val="${hotspot.passageConditionValue.replace(/"/g, '&quot;')}"\n`;
-                            if (hotspot.passageFailInfo) areaTag += `            text_fail_clic="${hotspot.passageFailInfo.replace(/"/g, '&quot;')}"\n`;
-                            if (hotspot.passageFailInfoEnter) areaTag += `            text_fail_enter="${hotspot.passageFailInfoEnter.replace(/"/g, '&quot;')}"\n`;
-                            if (hotspot.passageSoundFail) areaTag += `            data-sound-fail="${hotspot.passageSoundFail.replace(/"/g, '&quot;')}"\n`; // mouse enter
-                            if (hotspot.passageSoundClickFail) areaTag += `            data-sound-click-fail="${hotspot.passageSoundClickFail.replace(/"/g, '&quot;')}"\n`; // click
+                            areaTag += `            data-condition-var="${escapeHtml(formatVariable(hotspot.passageConditionVariable))}"\n`;
+                            areaTag += `            data-condition-val="${escapeHtml(hotspot.passageConditionValue)}"\n`;
+                            if (hotspot.passageFailInfo) areaTag += `            text_fail_clic="${escapeHtml(hotspot.passageFailInfo)}"\n`;
+                            if (hotspot.passageFailInfoEnter) areaTag += `            text_fail_enter="${escapeHtml(hotspot.passageFailInfoEnter)}"\n`;
+                            if (hotspot.passageSoundFail) areaTag += `            data-sound-fail="${escapeHtml(hotspot.passageSoundFail)}"\n`; // mouse enter
+                            if (hotspot.passageSoundClickFail) areaTag += `            data-sound-click-fail="${escapeHtml(hotspot.passageSoundClickFail)}"\n`; // click
                         }
                     }
                     // Only include data-sound if it has a value
-                    if (hotspot.sound) areaTag += `            data-sound="${hotspot.sound.replace(/"/g, '&quot;')}"\n`; // mouse enter
-                    if (hotspot.soundClick) areaTag += `            data-sound-click="${hotspot.soundClick.replace(/"/g, '&quot;')}"\n`; // click
-                    if (hotspot.value) areaTag += `            data-passage="${hotspot.value.replace(/"/g, '&quot;')}"\n`;
-                    if (hotspot.titleText) areaTag += `            title="${hotspot.titleText.replace(/"/g, '&quot;')}"\n`;
-                    if (hotspot.infoText) areaTag += `            data_info="${hotspot.infoText.replace(/"/g, '&quot;')}"\n`;
-                    if (hotspot.infoText2) areaTag += `            data_info_2="${hotspot.infoText2.replace(/"/g, '&quot;')}"\n`;
-                    if (hotspot.transition) areaTag += `            data-transition-depart="${hotspot.transition.replace(/"/g, '&quot;')}"\n`; 
+                    if (hotspot.sound) areaTag += `            data-sound="${escapeHtml(hotspot.sound)}"\n`; // mouse enter
+                    if (hotspot.soundClick) areaTag += `            data-sound-click="${escapeHtml(hotspot.soundClick)}"\n`; // click
+                    if (hotspot.value) areaTag += `            data-passage="${escapeHtml(hotspot.value)}"\n`;
+                    if (hotspot.infoText) areaTag += `            data_info="${escapeHtml(hotspot.infoText)}"\n`;
+                    if (hotspot.infoText2) areaTag += `            data_info_2="${escapeHtml(hotspot.infoText2)}"\n`;
+                    if (hotspot.transition) areaTag += `            data-transition-depart="${escapeHtml(hotspot.transition)}"\n`; 
+                    if (hotspot.titleText) areaTag += `            title="${escapeHtml(hotspot.titleText)}"\n`; // Moved to end
 
                     // Secondary Setter attributes for passage type (only if enabled or has values)
                     if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) {
-                        if (hotspot.variable2) areaTag += `            data-variable-2="${formatVariable(hotspot.variable2).replace(/"/g, '&quot;')}"\n`;
-                        if (hotspot.valor2) areaTag += `            data-valor-2="${hotspot.valor2.replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.variable2) areaTag += `            data-variable-2="${escapeHtml(formatVariable(hotspot.variable2))}"\n`;
+                        if (hotspot.valor2) areaTag += `            data-valor-2="${escapeHtml(hotspot.valor2)}"\n`;
                     }
 
                 } else if (hotspot.type === 'setter') {
                     // Only include condition attributes if enabled or has values
                     if (hotspot.enableConditionVariable || (hotspot.setterConditionVariable && hotspot.setterConditionValue)) {
                         if (hotspot.setterConditionVariable && hotspot.setterConditionValue) {
-                            areaTag += `            data-condition-var="${formatVariable(hotspot.setterConditionVariable).replace(/"/g, '&quot;')}"\n`;
-                            areaTag += `            data-condition-val="${hotspot.setterConditionValue.replace(/"/g, '&quot;')}"\n`;
-                            if (hotspot.setterFailInfo) areaTag += `            text_fail_clic="${hotspot.setterFailInfo.replace(/"/g, '&quot;')}"\n`;
-                            if (hotspot.setterFailInfoEnter) areaTag += `            text_fail_enter="${hotspot.setterFailInfoEnter.replace(/"/g, '&quot;')}"\n`;
-                            if (hotspot.setterSoundFail) areaTag += `            data-sound-fail="${hotspot.setterSoundFail.replace(/"/g, '&quot;')}"\n`; // mouse enter
-                            if (hotspot.setterSoundClickFail) areaTag += `            data-sound-click-fail="${hotspot.setterSoundClickFail.replace(/"/g, '&quot;')}"\n`; // click
+                            areaTag += `            data-condition-var="${escapeHtml(formatVariable(hotspot.setterConditionVariable))}"\n`;
+                            areaTag += `            data-condition-val="${escapeHtml(hotspot.setterConditionValue)}"\n`;
+                            if (hotspot.setterFailInfo) areaTag += `            text_fail_clic="${escapeHtml(hotspot.setterFailInfo)}"\n`;
+                            if (hotspot.setterFailInfoEnter) areaTag += `            text_fail_enter="${escapeHtml(hotspot.setterFailInfoEnter)}"\n`;
+                            if (hotspot.setterSoundFail) areaTag += `            data-sound-fail="${escapeHtml(hotspot.setterSoundFail)}"\n`; // mouse enter
+                            if (hotspot.setterSoundClickFail) areaTag += `            data-sound-click-fail="${escapeHtml(hotspot.setterSoundClickFail)}"\n`; // click
                         }
                     }
                     // Only include data-sound if it has a value
-                    if (hotspot.soundSetter) areaTag += `            data-sound="${hotspot.soundSetter.replace(/"/g, '&quot;')}"\n`; // mouse enter
-                    if (hotspot.soundClickSetter) areaTag += `            data-sound-click="${hotspot.soundClickSetter.replace(/"/g, '&quot;')}"\n`; // click
+                    if (hotspot.soundSetter) areaTag += `            data-sound="${escapeHtml(hotspot.soundSetter)}"\n`; // mouse enter
+                    if (hotspot.soundClickSetter) areaTag += `            data-sound-click="${escapeHtml(hotspot.soundClickSetter)}"\n`; // click
                     let setMacroContent = '';
                     const valorRaw = hotspot.valor;
                     const valorTrimmed = valorRaw.trim();
@@ -1207,25 +1321,27 @@
                         }
                     }
                     
-                    if (setMacroContent) areaTag += `            data-setter="${setMacroContent.replace(/"/g, '&quot;')}"\n`;
-                    if (hotspot.titleTextSetter) areaTag += `            title="${hotspot.titleTextSetter.replace(/"/g, '&quot;')}"\n`;
-                    if (hotspot.infoTextSetter) areaTag += `            data_info="${hotspot.infoTextSetter.replace(/"/g, '&quot;')}"\n`;
-                    if (hotspot.infoTextSetter2) areaTag += `            data_info_2="${hotspot.infoTextSetter2.replace(/"/g, '&quot;')}"\n`;
+                    if (setMacroContent) areaTag += `            data-setter="${escapeHtml(setMacroContent)}"\n`;
+                    if (hotspot.infoTextSetter) areaTag += `            data_info="${escapeHtml(hotspot.infoTextSetter)}"\n`;
+                    if (hotspot.infoTextSetter2) areaTag += `            data_info_2="${escapeHtml(hotspot.infoTextSetter2)}"\n`;
+                    if (hotspot.titleTextSetter) areaTag += `            title="${escapeHtml(hotspot.titleTextSetter)}"\n`; // Moved to end
                     
-                    if (formattedVariableName) areaTag += `            data_variable="${formattedVariableName}"\n`;
-                    if (hotspot.valor) areaTag += `            data_valor="${hotspot.valor}"\n`;
+                    if (formattedVariableName) areaTag += `            data_variable="${escapeHtml(formattedVariableName)}"\n`;
+                    if (hotspot.valor) areaTag += `            data_valor="${escapeHtml(hotspot.valor)}"\n`;
 
                     // Secondary Setter attributes (only if enabled or has values)
                     if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) {
-                        if (hotspot.variable2) areaTag += `            data-variable-2="${formatVariable(hotspot.variable2).replace(/"/g, '&quot;')}"\n`;
-                        if (hotspot.valor2) areaTag += `            data-valor-2="${hotspot.valor2.replace(/"/g, '&quot;')}"\n`;
+                        if (hotspot.variable2) areaTag += `            data-variable-2="${escapeHtml(formatVariable(hotspot.variable2))}"\n`;
+                        if (hotspot.valor2) areaTag += `            data-valor-2="${escapeHtml(hotspot.valor2)}"\n`;
                     }
                 }
 
-                // Visit Limit attributes (common for both types)
-                if (hotspot.visitLimit) areaTag += `            data-visit-limit="${hotspot.visitLimit.replace(/"/g, '&quot;')}"\n`;
-                if (hotspot.visitLimitTextEnter) areaTag += `            data-visit-limit-enter="${hotspot.visitLimitTextEnter.replace(/"/g, '&quot;')}"\n`;
-                if (hotspot.visitLimitTextClic) areaTag += `            data-visit-limit-clic="${hotspot.visitLimitTextClic.replace(/"/g, '&quot;')}"\n`;
+                // Visit Limit attributes (common for both types), only if enabled
+                if (hotspot.enableVisitLimit) {
+                    if (hotspot.visitLimit) areaTag += `            data-visit-limit="${escapeHtml(hotspot.visitLimit)}"\n`;
+                    if (hotspot.visitLimitTextEnter) areaTag += `            data-visit-limit-enter="${escapeHtml(hotspot.visitLimitTextEnter)}"\n`;
+                    if (hotspot.visitLimitTextClic) areaTag += `            data-visit-limit-clic="${escapeHtml(hotspot.visitLimitTextClic)}"\n`;
+                }
 
                 areaTag += `        >\n`; // Close the area tag
                 twineCode += areaTag;
@@ -1393,6 +1509,7 @@
                     visitLimit: visitLimit || '',
                     visitLimitTextEnter: visitLimitTextEnter || '',
                     visitLimitTextClic: visitLimitTextClic || '',
+                    enableVisitLimit: (visitLimit || visitLimitTextEnter || visitLimitTextClic) ? true : false, // Set based on loaded data
 
                     // Secondary Setter fields
                     variable2: dataVariable2 || '',
