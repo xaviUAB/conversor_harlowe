@@ -616,6 +616,7 @@
                         infoText: '', // This field will now store the Harlowe text (mouse enter)
                         infoText2: '', // NEW: For passage click info text
                         transition: '', // NEW: For passage transition
+                        transitionArrive: '', // NEW: For passage arrival transition
                         variable: '', // New field for setter variable name
                         valor: '', // New field for setter variable value
                         titleTextSetter: '',
@@ -815,6 +816,27 @@
                 });
             }
 
+            // Options for transition select dropdowns
+            const transitionOptions = `
+                <option value="">Cap</option>
+                <option value="instant">Instantani</option>
+                <option value="dissolve">Dissoldre</option>
+                <option value="fade">Esvaïment</option>
+                <option value="rumble">Tremolor</option>
+                <option value="shudder">Estremiment</option>
+                <option value="pulse">Pulsació</option>
+                <option value="zoom">Zoom</option>
+                <option value="flicker">Parpelleig</option>
+                <option value="slide-left">Lliscar Esquerra</option>
+                <option value="slide-right">Lliscar Dreta</option>
+                <option value="slide-up">Lliscar Amunt</option>
+                <option value="slide-down">Lliscar Avall</option>
+                <option value="fade-left">Esvaïment Esquerra</option>
+                <option value="fade-right">Esvaïment Dreta</option>
+                <option value="fade-up">Esvaïment Amunt</option>
+                <option value="fade-down">Esvaïment Avall</option>
+            `;
+
             // Render configuration items for each hotspot
             hotspots.forEach(hotspot => {
                 const item = document.createElement('div');
@@ -830,9 +852,7 @@
                     <div class="hotspot-section setter-specific-fields ${hotspot.type==='setter'?'':'hidden-field'}">
                         <div class="two-column-layout">
                             <div class="column">
-                                <div style="height: 1.5em;"></div> <!-- Blank line 1 -->
-                                <div style="height: 1.5em;"></div> <!-- Blank line 2 -->
-                                <label>Nom de la variable (ej: $nom_variable):</label><input type="text" data-field="variable" value="${escapeHtml(hotspot.variable || '')}" placeholder="Ej: $punts">
+                                <div style="height: 1.5em;"></div> <div style="height: 1.5em;"></div> <label>Nom de la variable (ej: $nom_variable):</label><input type="text" data-field="variable" value="${escapeHtml(hotspot.variable || '')}" placeholder="Ej: $punts">
                                 <label>Valor de la variable (Número o text. Es pot sumar. Ej: +=100):</label><input type="text" data-field="valor" value="${escapeHtml(hotspot.valor || '')}" placeholder="Ej: 1000 o &quot;text&quot;">
                                 
                                 <label>Text (mouse enter):</label><textarea data-field="infoTextSetter">${hotspot.infoTextSetter || ''}</textarea>
@@ -842,7 +862,6 @@
                                 <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleTextSetter" value="${escapeHtml(hotspot.titleTextSetter || '')}">
                             </div>
                             <div class="column condition-inputs-wrapper">
-                                <!-- NEW: Checkbox for Condition Variable -->
                                 <div class="condition-toggle-container">
                                     <label class="strong-red-label">
                                         <input type="checkbox" data-field="enableConditionVariable" ${hotspot.enableConditionVariable ? 'checked' : ''}> Activar Condició
@@ -856,7 +875,6 @@
                                     <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundClickFail" value="${escapeHtml(hotspot.setterSoundClickFail || '')}">
                                     <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundFail" value="${escapeHtml(hotspot.setterSoundFail || '')}">
                                 </div>
-                                <!-- Visit Limit fields (second column) -->
                                 <div class="visit-limit-toggle-container">
                                     <label class="darkyellow-label">
                                         <input type="checkbox" data-field="enableVisitLimit" ${hotspot.enableVisitLimit ? 'checked' : ''}> Límit de visites
@@ -867,7 +885,6 @@
                                     <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${hotspot.visitLimitTextEnter || ''}</textarea>
                                     <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${hotspot.visitLimitTextClic || ''}</textarea>
                                 </div>
-                                <!-- Secondary Variable fields (second column) -->
                                 <div class="secondary-variable-toggle-container">
                                     <label class="darkblue-label">
                                         <input type="checkbox" data-field="enableSecondaryVariable" ${hotspot.enableSecondaryVariable ? 'checked' : ''}> Variable secundària
@@ -884,29 +901,15 @@
                     <div class="hotspot-section passage-specific-fields ${hotspot.type==='passage'?'':'hidden-field'}">
                         <div class="two-column-layout">
                             <div class="column">
-                                <div style="height: 1.5em;"></div> <!-- Blank line 1 -->
-                                <div style="height: 1.5em;"></div> <!-- Blank line 2 -->
-                                <label>Passatge destí:</label><input type="text" data-field="value" value="${escapeHtml(hotspot.value || '')}" placeholder="Ej: Bosc">
+                                <div style="height: 1.5em;"></div> <div style="height: 1.5em;"></div> <label>Passatge destí:</label><input type="text" data-field="value" value="${escapeHtml(hotspot.value || '')}" placeholder="Ej: Bosc">
                                 
-                                <label>Transició (al canviar de passatge):</label>
+                                <label>Transició de sortida:</label>
                                 <select data-field="transition">
-                                    <option value="">Cap</option>
-                                    <option value="instant" ${hotspot.transition==='instant'?'selected':''}>Instantani</option>
-                                    <option value="dissolve" ${hotspot.transition==='dissolve'?'selected':''}>Dissoldre</option>
-                                    <option value="fade" ${hotspot.transition==='fade'?'selected':''}>Esvaïment</option>
-                                    <option value="rumble" ${hotspot.transition==='rumble'?'selected':''}>Tremolor</option>
-                                    <option value="shudder" ${hotspot.transition==='shudder'?'selected':''}>Estremiment</option>
-                                    <option value="pulse" ${hotspot.transition==='pulse'?'selected':''}>Pulsació</option>
-                                    <option value="zoom" ${hotspot.transition==='zoom'?'selected':''}>Zoom</option>
-                                    <option value="flicker" ${hotspot.transition==='flicker'?'selected':''}>Parpelleig</option>
-                                    <option value="slide-left" ${hotspot.transition==='slide-left'?'selected':''}>Lliscar Esquerra</option>
-                                    <option value="slide-right" ${hotspot.transition==='slide-right'?'selected':''}>Lliscar Dreta</option>
-                                    <option value="slide-up" ${hotspot.transition==='slide-up'?'selected':''}>Lliscar Amunt</option>
-                                    <option value="slide-down" ${hotspot.transition==='slide-down'?'selected':''}>Lliscar Avall</option>
-                                    <option value="fade-left" ${hotspot.transition==='fade-left'?'selected':''}>Esvaïment Esquerra</option>
-                                    <option value="fade-right" ${hotspot.transition==='fade-right'?'selected':''}>Esvaïment Dreta</option>
-                                    <option value="fade-up" ${hotspot.transition==='fade-up'?'selected':''}>Esvaïment Amunt</option>
-                                    <option value="fade-down" ${hotspot.transition==='fade-down'?'selected':''}>Esvaïment Avall</option>
+                                    ${transitionOptions}
+                                </select>
+                                <label>Transició d'arribada:</label>
+                                <select data-field="transitionArrive">
+                                    ${transitionOptions}
                                 </select>
                                 <label>Text (mouse enter):</label><textarea data-field="infoText">${hotspot.infoText || ''}</textarea>
                                 <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoText2">${hotspot.infoText2 || ''}</textarea>
@@ -928,7 +931,6 @@
                                     <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundClickFail" value="${escapeHtml(hotspot.passageSoundClickFail || '')}">
                                     <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundFail" value="${escapeHtml(hotspot.passageSoundFail || '')}">
                                 </div>
-                                <!-- Visit Limit fields (second column) -->
                                 <div class="visit-limit-toggle-container">
                                     <label class="darkyellow-label">
                                         <input type="checkbox" data-field="enableVisitLimit" ${hotspot.enableVisitLimit ? 'checked' : ''}> Límit de visites
@@ -939,7 +941,6 @@
                                     <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${hotspot.visitLimitTextEnter || ''}</textarea>
                                     <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${hotspot.visitLimitTextClic || ''}</textarea>
                                 </div>
-                                <!-- Secondary Variable fields (second column) -->
                                 <div class="secondary-variable-toggle-container">
                                     <label class="darkblue-label">
                                         <input type="checkbox" data-field="enableSecondaryVariable" ${hotspot.enableSecondaryVariable ? 'checked' : ''}> Variable secundària
@@ -961,6 +962,12 @@
                 const pFields = item.querySelector('.passage-specific-fields');
                 const sFields = item.querySelector('.setter-specific-fields');
                 
+                // Set selected options for existing and new dropdowns
+                if (hotspot.type === 'passage') {
+                    pFields.querySelector(`select[data-field="transition"]`).value = hotspot.transition;
+                    pFields.querySelector(`select[data-field="transitionArrive"]`).value = hotspot.transitionArrive;
+                }
+
                 // Function to toggle visibility of main fields based on hotspot type
                 const toggle = type => {
                     pFields.classList.toggle('hidden-field', type !== 'passage');
@@ -1027,6 +1034,17 @@
                         hideCopyFeedback();
                     });
                 }
+
+                // Specific listener for NEW 'transitionArrive' select element
+                const passageTransitionArriveSelect = item.querySelector('.passage-specific-fields [data-field="transitionArrive"]');
+                if (passageTransitionArriveSelect) {
+                    passageTransitionArriveSelect.addEventListener('change', e => {
+                        hotspot.transitionArrive = e.target.value;
+                        generateTwineCode();
+                        hideCopyFeedback();
+                    });
+                }
+
 
                 ['variable', 'valor', 'soundSetter','soundClickSetter', 'titleTextSetter'].forEach(f => { // titleTextSetter is now at the end
                     const element = item.querySelector(`.setter-specific-fields [data-field="${f}"]`);
@@ -1248,7 +1266,7 @@
                 const altText = escapeHtml(hotspot.name || `Hotspot ${hotspot.id}`);
                 
                 // Add comment for each hotspot in HTML comment format
-                twineCode += `    <!-- ${escapeHtml(hotspot.name || `Hotspot ${hotspot.id}`)} -->\n`;
+                twineCode += `    \n`;
                 let areaTag = `        <area shape="rect"\n`;
                 areaTag += `            coords="${coords}"\n`;
                 areaTag += `            alt="${altText}"\n`;
@@ -1274,6 +1292,7 @@
                     if (hotspot.infoText) areaTag += `            data_info="${escapeHtml(hotspot.infoText)}"\n`;
                     if (hotspot.infoText2) areaTag += `            data_info_2="${escapeHtml(hotspot.infoText2)}"\n`;
                     if (hotspot.transition) areaTag += `            data-transition-depart="${escapeHtml(hotspot.transition)}"\n`; 
+                    if (hotspot.transitionArrive) areaTag += `            data-transition-arrive="${escapeHtml(hotspot.transitionArrive)}"\n`; // NEW ARRIVE TRANSITION
                     if (hotspot.titleText) areaTag += `            title="${escapeHtml(hotspot.titleText)}"\n`; // Moved to end
 
                     // Secondary Setter attributes for passage type (only if enabled or has values)
@@ -1361,6 +1380,9 @@
                     
                     if (hotspot.transition && hotspot.transition !== 'Cap' && hotspot.transition !== 'instant') {
                         harloweLinkContent = `(transition-depart: "${hotspot.transition.replace(/"/g, '\\"')}")` + harloweLinkContent;
+                    }
+                    if (hotspot.transitionArrive && hotspot.transitionArrive !== 'Cap' && hotspot.transitionArrive !== 'instant') {
+                         harloweLinkContent = `(transition-arrive: "${hotspot.transitionArrive.replace(/"/g, '\\"')}")` + harloweLinkContent;
                     }
 
                     let harloweLink = '';
@@ -1454,6 +1476,7 @@
                 const dataSoundClickFail = area.getAttribute('data-sound-click-fail'); // click
                 
                 const dataTransition = area.getAttribute('data-transition-depart'); 
+                const dataTransitionArrive = area.getAttribute('data-transition-arrive'); // NEW: Get data-transition-arrive
 
                 // Retrieve visit limit attributes
                 const visitLimit = area.getAttribute('data-visit-limit');
@@ -1481,6 +1504,7 @@
                     infoText: '',
                     infoText2: '',
                     transition: '',
+                    transitionArrive: '', // NEW: Initialize transitionArrive
                     variable: '', // Will be assigned below
                     valor: '',    // Will be assigned below
                     titleTextSetter: '',
@@ -1527,6 +1551,7 @@
                     newHotspot.infoText = dataInfo || '';
                     newHotspot.infoText2 = dataInfo2 || '';
                     newHotspot.transition = dataTransition || '';
+                    newHotspot.transitionArrive = dataTransitionArrive || ''; // NEW: Assign transitionArrive
                     // Assign passage-specific condition fields
                     newHotspot.passageConditionVariable = dataConditionVar || '';
                     newHotspot.passageConditionValue = dataConditionVal || '';
