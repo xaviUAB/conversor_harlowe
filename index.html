@@ -344,7 +344,7 @@
             padding: 10px 15px;
             margin: 0 5px;
             border: none;
-            border-radius: 4px;
+            border-radius: 44px;
             cursor: pointer;
             color: white;
         }
@@ -1257,7 +1257,9 @@
                 return;
             }
             const originalFileName = imageUpload.files[0].name;
-            let twineCode = `<div class="twine-image-wrapper" style="min-width:${imageDisplay.naturalWidth}px;">\n`;
+            let twineCode = '';
+            
+            twineCode += `<div class="twine-image-wrapper" style="min-width:${imageDisplay.naturalWidth}px;">\n`;
             twineCode += `    <img src="imatges/${originalFileName.replace(/"/g, '&quot;')}" usemap="#hotspotmap" alt="Imatge amb hotspots">\n`;
             twineCode += '    <map name="hotspotmap">\n';
             hotspots.forEach(hotspot => {
@@ -1266,7 +1268,7 @@
                 const altText = escapeHtml(hotspot.name || `Hotspot ${hotspot.id}`);
                 
                 // Add comment for each hotspot in HTML comment format
-                twineCode += `    \n`;
+                twineCode += `    <!-- ${escapeHtml(hotspot.name || `Hotspot ${hotspot.id}`)} -->\n`;
                 let areaTag = `        <area shape="rect"\n`;
                 areaTag += `            coords="${coords}"\n`;
                 areaTag += `            alt="${altText}"\n`;
@@ -1376,14 +1378,19 @@
             hotspots.forEach(hotspot => {
                 if (hotspot.type === 'passage' && hotspot.value) {
                     const passageNameForLink = hotspot.value.replace(/"/g, '\\"');
-                    let harloweLinkContent = `(goto: "${passageNameForLink}")`;
+                    let harloweLinkContent = '';
                     
-                    if (hotspot.transition && hotspot.transition !== 'Cap' && hotspot.transition !== 'instant') {
-                        harloweLinkContent = `(transition-depart: "${hotspot.transition.replace(/"/g, '\\"')}")` + harloweLinkContent;
-                    }
+                    // Add t8n-arrive instruction
                     if (hotspot.transitionArrive && hotspot.transitionArrive !== 'Cap' && hotspot.transitionArrive !== 'instant') {
-                         harloweLinkContent = `(transition-arrive: "${hotspot.transitionArrive.replace(/"/g, '\\"')}")` + harloweLinkContent;
+                         harloweLinkContent += `(t8n-arrive: "${hotspot.transitionArrive.replace(/"/g, '\\"')}")`;
                     }
+                    // Add t8n-depart instruction
+                    if (hotspot.transition && hotspot.transition !== 'Cap' && hotspot.transition !== 'instant') {
+                        harloweLinkContent += `+(t8n-depart: "${hotspot.transition.replace(/"/g, '\\"')}")`;
+                    }
+                    
+                    // Add goto instruction
+                    harloweLinkContent += `(goto: "${passageNameForLink}")`;
 
                     let harloweLink = '';
                     // Only generate conditional link if enabled or has values
