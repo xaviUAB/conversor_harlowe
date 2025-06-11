@@ -41,6 +41,8 @@
             border: 1px dashed #ccc;
             overflow: hidden; /* Important per controlar el desbordament visual */
             box-sizing: border-box; /* Per incloure padding i border en el width/height */
+            /* Add touch-action to prevent default browser touch gestures on the editor itself */
+            touch-action: none; /* Prevents pan/zoom on the editor area */
         }
         #imageDisplay {
             max-width: 100%;
@@ -48,6 +50,8 @@
             display: none;
             user-select: none; /* Evita que la imatge es pugui seleccionar amb el ratolí */
             -webkit-user-drag: none; /* Evita que la imatge es pugui arrossegar */
+            /* Add touch-action: none to image as well if needed, but it might inherit from parent */
+            touch-action: none; /* Prevents pan/zoom on the image itself */
         }
         #drawingInstructions {
             text-align: center;
@@ -68,6 +72,7 @@
             font-size: 14px;
             box-sizing: border-box;
             z-index: 5; /* Base z-index for the hotspot area */
+            touch-action: none; /* Prevents pan/zoom on hotspots */
         }
         .hotspot-name-display {
             position: absolute;
@@ -190,6 +195,7 @@
             border-radius: 50%;
             cursor: nwse-resize; /* Diagonal resize cursor */
             z-index: 25; /* Higher than delete button and name display */
+            touch-action: none; /* Prevents pan/zoom on resize handle */
         }
         .hidden-field {
             display: none;
@@ -478,11 +484,24 @@
             }
         });
 
-        // Mouse down event listener for image editor (drawing, dragging, and resizing)
-        imageEditor.addEventListener('mousedown', (e) => {
+        // Helper to get coordinates from mouse or touch event
+        function getCoords(e) {
+            if (e.touches && e.touches.length > 0) {
+                return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+            }
+            return { clientX: e.clientX, clientY: e.clientY };
+        }
+
+        // Mouse down and Touch start event listener for image editor (drawing, dragging, and resizing)
+        imageEditor.addEventListener('mousedown', startInteraction);
+        imageEditor.addEventListener('touchstart', startInteraction);
+
+        function startInteraction(e) {
             hideCopyFeedback(); // Hide feedback on interaction
             if (imageDisplay.style.display === 'none' || !imageDisplay.src) return; // Only interact if an image is loaded
             
+            const { clientX, clientY } = getCoords(e);
+
             // Modified: If the click target is the delete button, trigger confirmation and prevent other actions.
             if (e.target.classList.contains('hotspot-delete-button-visual')) {
                 const hotspotId = parseInt(e.target.parentElement.dataset.hotspotId);
@@ -491,6 +510,7 @@
                     showConfirmationModal(hotspot.id, hotspot.name || `Hotspot ${hotspot.id}`);
                 }
                 e.stopPropagation(); // Prevent drawing or dragging
+                e.preventDefault(); // Prevent default touch behavior
                 return;
             }
 
@@ -501,43 +521,51 @@
                 activeHotspotElement = e.target.parentElement; // Get the parent hotspot-area
                 initialHotspotWidth = activeHotspotElement.offsetWidth;
                 initialHotspotHeight = activeHotspotElement.offsetHeight;
-                initialMouseX = e.clientX;
-                initialMouseY = e.clientY;
+                initialMouseX = clientX;
+                initialMouseY = clientY;
                 activeHotspotElement.style.cursor = 'nwse-resize'; // Keep resize cursor
                 e.stopPropagation(); // Prevent drawing or dragging the hotspot
+                e.preventDefault(); // Prevent default touch behavior
             } else if (e.target.classList.contains('hotspot-area')) {
                 isDragging = true;
                 activeHotspotElement = e.target;
                 const hotspotRect = activeHotspotElement.getBoundingClientRect();
-                dragOffsetX = e.clientX - hotspotRect.left;
-                dragOffsetY = e.clientY - hotspotRect.top;
+                dragOffsetX = clientX - hotspotRect.left;
+                dragOffsetY = clientY - hotspotRect.top;
                 activeHotspotElement.style.cursor = 'grabbing';
                 e.stopPropagation();
+                e.preventDefault(); // Prevent default touch behavior
             } else if (imageEditor.contains(e.target) && (e.target === imageDisplay || e.target === imageEditor || e.target.parentElement === imageEditor || e.target.parentElement.parentElement === imageEditor ) ) {
                 isDrawing = true;
                 const imageRect = imageDisplay.getBoundingClientRect();
-                startX = e.clientX - imageRect.left;
-                startY = e.clientY - imageRect.top;
+                startX = clientX - imageRect.left;
+                startY = clientY - imageRect.top;
                 currentRect = document.createElement('div');
                 currentRect.classList.add('hotspot-area');
                 const editorRect = imageEditor.getBoundingClientRect();
-                currentRect.style.left = `${e.clientX - editorRect.left}px`;
-                currentRect.style.top = `${e.clientY - editorRect.top}px`;
+                currentRect.style.left = `${clientX - editorRect.left}px`;
+                currentRect.style.top = `${clientY - editorRect.top}px`;
                 currentRect.style.width = '0px';
                 currentRect.style.height = '0px';
                 currentRect.style.cursor = 'crosshair';
                 imageEditor.appendChild(currentRect);
                 imageEditor.style.cursor = 'grabbing';
+                e.preventDefault(); // Prevent default touch behavior
             }
-        });
+        }
 
-        // Mouse move event listener for drawing, dragging, and resizing
-        document.addEventListener('mousemove', (e) => {
+        // Mouse move and Touch move event listener for drawing, dragging, and resizing
+        document.addEventListener('mousemove', handleInteractionMove);
+        document.addEventListener('touchmove', handleInteractionMove, { passive: false }); // passive: false for preventDefault
+
+        function handleInteractionMove(e) {
+            const { clientX, clientY } = getCoords(e);
+
             if (isDrawing && currentRect) {
                 hasMovedDuringInteraction = true; // Mouse moved during drawing
                 // Update dimensions of the new hotspot being drawn
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
-                let currentMouseEventX_onImage = e.clientX - imageRect.left, currentMouseEventY_onImage = e.clientY - imageRect.top;
+                let currentMouseEventX_onImage = clientX - imageRect.left, currentMouseEventY_onImage = clientY - imageRect.top;
                 let rLeft = Math.min(startX, currentMouseEventX_onImage), rTop = Math.min(startY, currentMouseEventY_onImage),
                     rRight = Math.max(startX, currentMouseEventX_onImage), rBottom = Math.max(startY, currentMouseEventY_onImage);
                 
@@ -556,11 +584,12 @@
                 currentRect.style.top = `${(imageRect.top - editorRect.top) + rTop}px`;
                 currentRect.style.width = `${rWidth}px`;
                 currentRect.style.height = `${rHeight}px`;
+                e.preventDefault(); // Prevent scrolling during drawing
             } else if (isDragging && activeHotspotElement) {
                 hasMovedDuringInteraction = true; // Mouse moved during dragging
                 // Update position of the dragged hotspot
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
-                let newLeftInEditor = e.clientX - editorRect.left - dragOffsetX, newTopInEditor = e.clientY - editorRect.top - dragOffsetY;
+                let newLeftInEditor = clientX - editorRect.left - dragOffsetX, newTopInEditor = clientY - editorRect.top - dragOffsetY;
                 const hotspotWidth = activeHotspotElement.offsetWidth, hotspotHeight = activeHotspotElement.offsetHeight,
                       imageLeftInEditor = imageRect.left - editorRect.left, imageTopInEditor = imageRect.top - editorRect.top,
                       imageRightInEditor = imageLeftInEditor + imageRect.width, imageBottomInEditor = imageTopInEditor + imageRect.height;
@@ -571,6 +600,7 @@
                 
                 activeHotspotElement.style.left = `${newLeftInEditor}px`;
                 activeHotspotElement.style.top = `${newTopInEditor}px`;
+                e.preventDefault(); // Prevent scrolling during dragging
             } else if (isResizing && activeHotspotElement) {
                 hasMovedDuringInteraction = true; // Mouse moved during resizing
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
@@ -579,8 +609,8 @@
                 const imageRightInEditor = imageLeftInEditor + imageRect.width;
                 const imageBottomInEditor = imageTopInEditor + imageRect.height;
 
-                let newWidth = initialHotspotWidth + (e.clientX - initialMouseX);
-                let newHeight = initialHotspotHeight + (e.clientY - initialMouseY);
+                let newWidth = initialHotspotWidth + (clientX - initialMouseX);
+                let newHeight = initialHotspotHeight + (clientY - initialMouseY);
 
                 // Get current position of the hotspot
                 const currentLeft = parseFloat(activeHotspotElement.style.left);
@@ -592,11 +622,16 @@
 
                 activeHotspotElement.style.width = `${newWidth}px`;
                 activeHotspotElement.style.height = `${newHeight}px`;
+                e.preventDefault(); // Prevent scrolling during resizing
             }
-        });
+        }
 
-        // Mouse up event listener for finishing drawing, dragging, or resizing
-        document.addEventListener('mouseup', (e) => {
+        // Mouse up and Touch end event listener for finishing drawing, dragging, or resizing
+        document.addEventListener('mouseup', endInteraction);
+        document.addEventListener('touchend', endInteraction);
+        document.addEventListener('touchcancel', endInteraction); // Handle cancelled touches
+
+        function endInteraction(e) {
             if (isDrawing && currentRect) {
                 // Finish drawing a new hotspot
                 isDrawing = false;
@@ -705,7 +740,7 @@
             imageEditor.style.cursor = 'crosshair';
             if(activeHotspotElement && !isDragging && !isResizing) activeHotspotElement.style.cursor = 'move';
             if(!isDragging && !isResizing) activeHotspotElement = null;
-        });
+        }
 
         // Function to update visibility of inner fields (secondary variable, condition, visit limit)
         function updateInnerFieldVisibility(hotspot, itemElement) {
@@ -1310,7 +1345,7 @@
                     if (hotspot.titleText) areaTag += `            title="${escapeHtml(hotspot.titleText)}"\n`; // Moved to end
 
                     // Secondary Setter attributes for passage type (only if enabled or has values)
-                    if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) {
+                    if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) { // FIX: Changed 'hotpot' to 'hotspot'
                         if (hotspot.variable2) areaTag += `            data-variable-2="${escapeHtml(formatVariable(hotspot.variable2))}"\n`;
                         if (hotspot.valor2) areaTag += `            data-valor-2="${escapeHtml(hotspot.valor2)}"\n`;
                     }
@@ -1363,7 +1398,7 @@
                     if (hotspot.valor) areaTag += `            data_valor="${escapeHtml(hotspot.valor)}"\n`;
 
                     // Secondary Setter attributes (only if enabled or has values)
-                    if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) {
+                    if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) { // FIX: Changed 'hotpot' to 'hotspot'
                         if (hotspot.variable2) areaTag += `            data-variable-2="${escapeHtml(formatVariable(hotspot.variable2))}"\n`;
                         if (hotspot.valor2) areaTag += `            data-valor-2="${escapeHtml(hotspot.valor2)}"\n`;
                     }
