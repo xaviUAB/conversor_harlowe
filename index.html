@@ -186,10 +186,10 @@
         /* Styles for the resize handle */
         .hotspot-resize-handle {
             position: absolute;
-            bottom: -5px; /* Adjust to position slightly outside */
-            right: -5px; /* Adjust to position slightly outside */
-            width: 10px;
-            height: 10px;
+            bottom: -10px; /* Adjust to position slightly outside */
+            right: -10px; /* Adjust to position slightly outside */
+            width: 20px; /* Increased size */
+            height: 20px; /* Increased size */
             background-color: white;
             border: 1px solid #007bff;
             border-radius: 50%;
@@ -415,11 +415,16 @@
         let dragOffsetX, dragOffsetY;
         let initialHotspotWidth, initialHotspotHeight; // New variables for resizing
         let initialMouseX, initialMouseY; // New variables for resizing
-        let startX, startY;
+        let startX, startY; // For drawing start and tap detection
         let currentRect = null;
         let hotspots = [];
         let hotspotIdCounter = 0;
-        let hasMovedDuringInteraction = false; // New flag to track if mouse moved during mousedown
+        let hasMovedDuringInteraction = false; // New flag to track if mouse moved during mousedown/touchstart
+        let initialInteractionTarget = null; // New global variable to store the element where interaction started
+
+
+        // Add a small threshold for movement to distinguish a tap from a drag
+        const TAP_THRESHOLD = 8; // pixels (increased for more forgiving tap detection)
 
         // Function to hide the "Code copied!" feedback
         function hideCopyFeedback() {
@@ -437,8 +442,17 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;")
-                .replace(/`/g, "&#x60;"); // Escape backticks
+                .replace(/`/g, "&#x60;"); // Escape backticks for HTML entity representation
         }
+        
+        // Function to escape backticks specifically for JavaScript template literals
+        function escapeForTemplateLiteral(str) {
+            if (typeof str !== 'string') {
+                str = String(str || '');
+            }
+            return str.replace(/`/g, '\\`');
+        }
+
 
         // Event listener for image upload
         imageUpload.addEventListener('change', (e) => {
@@ -492,6 +506,18 @@
             return { clientX: e.clientX, clientY: e.clientY };
         }
 
+        // Helper function to find the closest parent with the 'hotspot-area' class
+        function findHotspotAreaParent(element) {
+            let currentElement = element;
+            while (currentElement && currentElement !== imageEditor) {
+                if (currentElement.classList.contains('hotspot-area')) {
+                    return currentElement;
+                }
+                currentElement = currentElement.parentElement;
+            }
+            return null; // Not found within the imageEditor or is not a hotspot-area
+        }
+
         // Mouse down and Touch start event listener for image editor (drawing, dragging, and resizing)
         imageEditor.addEventListener('mousedown', startInteraction);
         imageEditor.addEventListener('touchstart', startInteraction);
@@ -502,47 +528,66 @@
             
             const { clientX, clientY } = getCoords(e);
 
-            // Modified: If the click target is the delete button, trigger confirmation and prevent other actions.
+            // Store initial clientX, clientY for tap detection
+            startX = clientX;
+            startY = clientY;
+            hasMovedDuringInteraction = false; // Reset flag at the start of a new interaction
+            initialInteractionTarget = e.target; // Store the initial target for tap detection
+
+            // Check if the target is the delete button
             if (e.target.classList.contains('hotspot-delete-button-visual')) {
-                const hotspotId = parseInt(e.target.parentElement.dataset.hotspotId);
-                const hotspot = hotspots.find(h => h.id === hotspotId);
-                if (hotspot) {
-                    showConfirmationModal(hotspot.id, hotspot.name || `Hotspot ${hotspot.id}`);
+                const hotspotElement = findHotspotAreaParent(e.target);
+                if (hotspotElement) {
+                    const hotspotId = parseInt(hotspotElement.dataset.hotspotId);
+                    const hotspot = hotspots.find(h => h.id === hotspotId);
+                    if (hotspot) {
+                        showConfirmationModal(hotspot.id, hotspot.name || `Hotspot ${hotspot.id}`);
+                    }
                 }
-                e.stopPropagation(); // Prevent drawing or dragging
-                e.preventDefault(); // Prevent default touch behavior
+                e.stopPropagation(); // Prevent further bubbling
+                e.preventDefault(); // Prevent default touch behavior (e.g., scrolling, context menu)
                 return;
             }
 
-            hasMovedDuringInteraction = false; // Reset flag at the start of a new interaction
-
+            // Check if the target is the resize handle
             if (e.target.classList.contains('hotspot-resize-handle')) {
                 isResizing = true;
-                activeHotspotElement = e.target.parentElement; // Get the parent hotspot-area
-                initialHotspotWidth = activeHotspotElement.offsetWidth;
-                initialHotspotHeight = activeHotspotElement.offsetHeight;
-                initialMouseX = clientX;
-                initialMouseY = clientY;
-                activeHotspotElement.style.cursor = 'nwse-resize'; // Keep resize cursor
+                activeHotspotElement = findHotspotAreaParent(e.target); // Get the parent hotspot-area
+                if (activeHotspotElement) {
+                    initialHotspotWidth = activeHotspotElement.offsetWidth;
+                    initialHotspotHeight = activeHotspotElement.offsetHeight;
+                    initialMouseX = clientX;
+                    initialMouseY = clientY;
+                    activeHotspotElement.style.cursor = 'nwse-resize'; // Keep resize cursor
+                }
                 e.stopPropagation(); // Prevent drawing or dragging the hotspot
                 e.preventDefault(); // Prevent default touch behavior
-            } else if (e.target.classList.contains('hotspot-area')) {
+                return;
+            } 
+            
+            // Check if the target is a hotspot area itself (or its name display)
+            const clickedHotspotArea = findHotspotAreaParent(e.target);
+            if (clickedHotspotArea) {
                 isDragging = true;
-                activeHotspotElement = e.target;
+                activeHotspotElement = clickedHotspotArea;
                 const hotspotRect = activeHotspotElement.getBoundingClientRect();
                 dragOffsetX = clientX - hotspotRect.left;
                 dragOffsetY = clientY - hotspotRect.top;
                 activeHotspotElement.style.cursor = 'grabbing';
-                e.stopPropagation();
+                e.stopPropagation(); // Prevent further bubbling
                 e.preventDefault(); // Prevent default touch behavior
             } else if (imageEditor.contains(e.target) && (e.target === imageDisplay || e.target === imageEditor || e.target.parentElement === imageEditor || e.target.parentElement.parentElement === imageEditor ) ) {
+                // If it's a click on the image editor background and not a hotspot
                 isDrawing = true;
                 const imageRect = imageDisplay.getBoundingClientRect();
+                // Coordinates relative to the image itself
                 startX = clientX - imageRect.left;
                 startY = clientY - imageRect.top;
+
                 currentRect = document.createElement('div');
                 currentRect.classList.add('hotspot-area');
                 const editorRect = imageEditor.getBoundingClientRect();
+                // Position currentRect relative to imageEditor
                 currentRect.style.left = `${clientX - editorRect.left}px`;
                 currentRect.style.top = `${clientY - editorRect.top}px`;
                 currentRect.style.width = '0px';
@@ -561,8 +606,12 @@
         function handleInteractionMove(e) {
             const { clientX, clientY } = getCoords(e);
 
+            // Only set hasMovedDuringInteraction to true if movement exceeds threshold
+            if (Math.abs(clientX - startX) > TAP_THRESHOLD || Math.abs(clientY - startY) > TAP_THRESHOLD) {
+                hasMovedDuringInteraction = true;
+            }
+
             if (isDrawing && currentRect) {
-                hasMovedDuringInteraction = true; // Mouse moved during drawing
                 // Update dimensions of the new hotspot being drawn
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
                 let currentMouseEventX_onImage = clientX - imageRect.left, currentMouseEventY_onImage = clientY - imageRect.top;
@@ -586,7 +635,6 @@
                 currentRect.style.height = `${rHeight}px`;
                 e.preventDefault(); // Prevent scrolling during drawing
             } else if (isDragging && activeHotspotElement) {
-                hasMovedDuringInteraction = true; // Mouse moved during dragging
                 // Update position of the dragged hotspot
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
                 let newLeftInEditor = clientX - editorRect.left - dragOffsetX, newTopInEditor = clientY - editorRect.top - dragOffsetY;
@@ -602,7 +650,6 @@
                 activeHotspotElement.style.top = `${newTopInEditor}px`;
                 e.preventDefault(); // Prevent scrolling during dragging
             } else if (isResizing && activeHotspotElement) {
-                hasMovedDuringInteraction = true; // Mouse moved during resizing
                 const imageRect = imageDisplay.getBoundingClientRect(), editorRect = imageEditor.getBoundingClientRect();
                 const imageLeftInEditor = imageRect.left - editorRect.left;
                 const imageTopInEditor = imageRect.top - editorRect.top;
@@ -632,9 +679,20 @@
         document.addEventListener('touchcancel', endInteraction); // Handle cancelled touches
 
         function endInteraction(e) {
-            if (isDrawing && currentRect) {
-                // Finish drawing a new hotspot
-                isDrawing = false;
+            const { clientX, clientY } = getCoords(e);
+            const movedSignificantly = Math.abs(clientX - startX) > TAP_THRESHOLD || Math.abs(clientY - startY) > TAP_THRESHOLD;
+
+            const wasDrawing = isDrawing;
+            const wasDragging = isDragging;
+            const wasResizing = isResizing;
+
+            isDrawing = false;
+            isDragging = false;
+            isResizing = false;
+            imageEditor.style.cursor = 'crosshair';
+
+            if (wasDrawing && currentRect) {
+                // Logic for finishing drawing a new hotspot
                 const natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight,
                       dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight;
 
@@ -642,7 +700,7 @@
                 let l_disp = hotspotRectVis.left - imageRectVis.left, t_disp = hotspotRectVis.top - imageRectVis.top,
                     w_disp = hotspotRectVis.width, h_disp = hotspotRectVis.height;
                 currentRect.remove(); // Remove the temporary drawing rectangle
-                currentRect = null;
+                currentRect = null; // Clear the reference
 
                 if (w_disp >= 5 && h_disp >= 5 && dispW && dispH) { // Only add if it's a reasonable size
                     const sX = natW / dispW, sY = natH / dispH;
@@ -652,94 +710,53 @@
                     hotspotIdCounter++;
                     hotspots.push({
                         id: hotspotIdCounter,
-                        coords: coords,
                         name: `Hotspot ${hotspotIdCounter}`,
                         type: 'passage',
-                        value: '', // For passage type
-                        titleText: '',
-                        sound: '', // Initialize sound property (mouse enter)
-                        soundClick: '', // NEW: Sound for click (passage)
-                        infoText: '', // This field will now store the Harlowe text (mouse enter)
-                        infoText2: '', // NEW: For passage click info text
-                        transition: '', // NEW: For passage transition
-                        transitionArrive: '', // NEW: For passage arrival transition
-                        variable: '', // New field for setter variable name
-                        valor: '', // New field for setter variable value
-                        titleTextSetter: '',
-                        soundSetter: '', // Initialize soundSetter property (mouse enter)
-                        hotspotSoundClickSetter: '', // NEW: Sound for click (setter)
-                        infoTextSetter: '', // This field will now store the Harlowe text (mouse enter)
-                        infoTextSetter2: '', // New field for alternative info text for setter (click)
-                        
-                        // Passage specific condition fields
-                        passageConditionVariable: '',
-                        passageConditionValue: '',
-                        passageFailInfo: '',
-                        passageFailInfoEnter: '',
-                        passageSoundFail: '', // (mouse enter)
-                        passageSoundClickFail: '', // NEW: Sound for click when condition fails (passage)
-
-                        // Setter specific condition fields
-                        setterConditionVariable: '',
-                        setterConditionValue: '',
-                        setterFailInfo: '',
-                        setterFailInfoEnter: '',
-                        setterSoundFail: '', // (mouse enter)
-                        setterSoundClickFail: '', // NEW: Sound for click when condition fails (setter)
-
-                        // Visit Limit fields (common for both types)
-                        visitLimit: '',
-                        visitLimitTextEnter: '',
-                        visitLimitTextClic: '',
-                        enableVisitLimit: false, // New field for enabling/disabling visit limit
-
-                        // Secondary Setter fields
-                        variable2: '',
-                        valor2: '',
-                        enableSecondaryVariable: false, // Default to false
-                        enableConditionVariable: false // Default to false
+                        coords: coords,
+                        value: '',
+                        titleText: '', sound: '', soundClick: '', infoText: '', infoText2: '',
+                        transition: '', transitionArrive: '',
+                        variable: '', valor: '', titleTextSetter: '', soundSetter: '', hotspotSoundClickSetter: '',
+                        infoTextSetter: '', infoTextSetter2: '',
+                        passageConditionVariable: '', passageConditionValue: '', passageFailInfo: '', passageFailInfoEnter: '',
+                        passageSoundFail: '', passageSoundClickFail: '',
+                        setterConditionVariable: '', setterConditionValue: '', setterFailInfo: '', setterFailInfoEnter: '',
+                        setterSoundFail: '', setterSoundClickFail: '',
+                        visitLimit: '', visitLimitTextEnter: '', visitLimitTextClic: '', enableVisitLimit: false,
+                        variable2: '', valor2: '', enableSecondaryVariable: false, enableConditionVariable: false
                     });
                 }
                 renderHotspots();
-                generateTwineCode();
-            } else if (isDragging && activeHotspotElement) {
-                isDragging = false;
+                generateTwineCode(); // Generate code after adding a new hotspot
+            } else if ((wasDragging || wasResizing) && activeHotspotElement) { // Handle both drag and resize ending
                 const hotspotId = parseInt(activeHotspotElement.dataset.hotspotId);
                 const hotspot = hotspots.find(h => h.id === hotspotId);
+
                 if (hotspot) {
-                    const natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight,
-                          dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight;
-                    if (dispW && dispH) {
-                        const hotspotRectVis = activeHotspotElement.getBoundingClientRect(), imageRectVis = imageDisplay.getBoundingClientRect();
-                        const l_disp = hotspotRectVis.left-imageRectVis.left, t_disp = hotspotRectVis.top-imageRectVis.top,
-                              w_disp = hotspotRectVis.width, h_disp = hotspotRectVis.height;
-                        const sX = natW/dispW, sY = natH/dispH;
-                        const fL=l_disp*sX, fT=t_disp*sY, fW=w_disp*sX, fH=h_disp*sY;
-                        hotspot.coords = [Math.round(fL),Math.round(fT),Math.round(fL+fW),Math.round(fT+fH)].join(',');
-                        generateTwineCode();
-                    }
-                }
-            } else if (isResizing && activeHotspotElement) {
-                isResizing = false;
-                const hotspotId = parseInt(activeHotspotElement.dataset.hotspotId);
-                const hotspot = hotspots.find(h => h.id === hotspotId);
-                if (hotspot) {
-                    const natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight,
-                          dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight;
-                    if (dispW && dispH) {
-                        const hotspotRectVis = activeHotspotElement.getBoundingClientRect(), imageRectVis = imageDisplay.getBoundingClientRect();
-                        const l_disp = hotspotRectVis.left-imageRectVis.left, t_disp = hotspotRectVis.top-imageRectVis.top,
-                              w_disp = hotspotRectVis.width, h_disp = hotspotRectVis.height;
-                        const sX = natW/dispW, sY = natH/dispH;
-                        const fL=l_disp*sX, fT=t_disp*sY, fW=w_disp*sX, fH=h_disp*sY;
-                        hotspot.coords = [Math.round(fL),Math.round(fT),Math.round(fL+fW),Math.round(fT+fH)].join(',');
-                        generateTwineCode();
+                    if (!movedSignificantly) {
+                        // This was a tap on an existing hotspot/resize handle, not a drag/resize
+                        const configElement = document.querySelector(`#hotspotsContainer .hotspot-item[data-hotspot-id="${hotspotId}"]`);
+                        if (configElement) {
+                            configElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    } else {
+                        // This was an actual drag or resize, update coordinates
+                        const natW = imageDisplay.naturalWidth, natH = imageDisplay.naturalHeight,
+                            dispW = imageDisplay.offsetWidth, dispH = imageDisplay.offsetHeight;
+                        if (dispW && dispH) {
+                            const hotspotRectVis = activeHotspotElement.getBoundingClientRect(), imageRectVis = imageDisplay.getBoundingClientRect();
+                            const l_disp = hotspotRectVis.left - imageRectVis.left, t_disp = hotspotRectVis.top - imageRectVis.top,
+                                  w_disp = hotspotRectVis.width, h_disp = hotspotRectVis.height;
+                            const sX = natW / dispW, sY = natH / dispH;
+                            const fL = l_disp * sX, fT = t_disp * sY, fW = w_disp * sX, fH = h_disp * sY;
+                            hotspot.coords = [Math.round(fL), Math.round(fT), Math.round(fL + fW), Math.round(fT + fH)].join(',');
+                            generateTwineCode(); // Generate code after dragging or resizing
+                        }
                     }
                 }
             }
-            imageEditor.style.cursor = 'crosshair';
-            if(activeHotspotElement && !isDragging && !isResizing) activeHotspotElement.style.cursor = 'move';
-            if(!isDragging && !isResizing) activeHotspotElement = null;
+            activeHotspotElement = null;
+            initialInteractionTarget = null;
         }
 
         // Function to update visibility of inner fields (secondary variable, condition, visit limit)
@@ -825,21 +842,6 @@
                     visRect.style.width = `${(coordsArr[2] - coordsArr[0]) * scaleX}px`;
                     visRect.style.height = `${(coordsArr[3] - coordsArr[1]) * scaleY}px`;
 
-                    // Add click listener to visual hotspot to scroll to its config
-                    visRect.addEventListener('click', (e) => {
-                        // Prevent this click from bubbling up to the document listener for Twine interaction
-                        e.stopPropagation(); 
-                        // Only scroll if no significant movement occurred during the mousedown-mouseup cycle
-                        if (!hasMovedDuringInteraction) {
-                            const id = parseInt(e.currentTarget.dataset.hotspotId);
-                            const configElement = document.querySelector(`#hotspotsContainer .hotspot-item[data-hotspot-id="${id}"]`);
-                            if (configElement) {
-                                configElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }
-                        }
-                    });
-
-
                     const nameDisplay = document.createElement('div');
                     nameDisplay.classList.add('hotspot-name-display');
                     nameDisplay.textContent = hotspot.name || `Hotspot ${hotspot.id}`;
@@ -848,9 +850,7 @@
                     const delBtn = document.createElement('div');
                     delBtn.classList.add('hotspot-delete-button-visual');
                     delBtn.textContent = 'X'; // Keep it as 'X'
-                    delBtn.title = `Eliminar aquest hotspot (${hotspot.name || `Hotspot ${hotspot.id}`})`;
-                    // Changed: The event listener is now handled by the imageEditor mousedown.
-                    // delBtn.addEventListener('click', (e) => { e.stopPropagation(); removeHotspot(hotspot.id); }); 
+                    delBtn.title = `Eliminar aquest hotspot (${hotspot.name || `Hotspot ${hotspot.id}`})`; // Fixed typo from hotpot to hotspot
                     visRect.appendChild(delBtn);
 
                     // Add resize handle
@@ -902,8 +902,8 @@
                                 <div style="height: 1.5em;"></div> <div style="height: 1.5em;"></div> <label>Nom de la variable (ej: $nom_variable):</label><input type="text" data-field="variable" value="${escapeHtml(hotspot.variable || '')}" placeholder="Ej: $punts">
                                 <label>Valor de la variable (Número o text. Es pot sumar. Ej: +=100):</label><input type="text" data-field="valor" value="${escapeHtml(hotspot.valor || '')}" placeholder="Ej: 1000 o &quot;text&quot;">
                                 
-                                <label>Text (mouse enter):</label><textarea data-field="infoTextSetter">${hotspot.infoTextSetter || ''}</textarea>
-                                <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoTextSetter2">${hotspot.infoTextSetter2 || ''}</textarea>
+                                <label>Text (mouse enter):</label><textarea data-field="infoTextSetter">${escapeHtml(hotspot.infoTextSetter)}</textarea>
+                                <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoTextSetter2">${escapeHtml(hotspot.infoTextSetter2)}</textarea>
                                 <label>So (clic - nom àudio enregistrat a hal.tracks):</label><input type="text" data-field="soundClickSetter" value="${escapeHtml(hotspot.soundClickSetter || '')}">
                                 <label>So (mouse enter - nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="soundSetter" value="${escapeHtml(hotspot.soundSetter || '')}">
                                 <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleTextSetter" value="${escapeHtml(hotspot.titleTextSetter || '')}">
@@ -917,8 +917,8 @@
                                 <div class="condition-fields-container ${hotspot.enableConditionVariable ? '' : 'hidden-field'}">
                                     <label class="condition-label">Variable (Condició):</label><input type="text" data-field="setterConditionVariable" value="${escapeHtml(hotspot.setterConditionVariable || '')}" placeholder="Ej: $clau">
                                     <label class="condition-label">Valor (Condició):</label><input type="text" data-field="setterConditionValue" value="${escapeHtml(hotspot.setterConditionValue || '')}" placeholder="Ej: true o 1">
-                                    <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="setterFailInfoEnter">${hotspot.setterFailInfoEnter || ''}</textarea>
-                                    <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="setterFailInfo">${hotspot.setterFailInfo || ''}</textarea>
+                                    <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="setterFailInfoEnter">${escapeHtml(hotspot.setterFailInfoEnter)}</textarea>
+                                    <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="setterFailInfo">${escapeHtml(hotspot.setterFailInfo)}</textarea>
                                     <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundClickFail" value="${escapeHtml(hotspot.setterSoundClickFail || '')}">
                                     <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="setterSoundFail" value="${escapeHtml(hotspot.setterSoundFail || '')}">
                                 </div>
@@ -929,8 +929,8 @@
                                 </div>
                                 <div class="visit-limit-section-container ${hotspot.enableVisitLimit ? '' : 'hidden-field'}">
                                     <label class="limit-label">Número de visites:</label><input type="number" data-field="visitLimit" value="${escapeHtml(hotspot.visitLimit || '')}" placeholder="">
-                                    <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${hotspot.visitLimitTextEnter || ''}</textarea>
-                                    <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${hotspot.visitLimitTextClic || ''}</textarea>
+                                    <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${escapeHtml(hotspot.visitLimitTextEnter)}</textarea>
+                                    <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${escapeHtml(hotspot.visitLimitTextClic)}</textarea>
                                 </div>
                                 <div class="secondary-variable-toggle-container">
                                     <label class="darkblue-label">
@@ -958,8 +958,8 @@
                                 <select data-field="transitionArrive">
                                     ${transitionOptions}
                                 </select>
-                                <label>Text (mouse enter):</label><textarea data-field="infoText">${hotspot.infoText || ''}</textarea>
-                                <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoText2">${hotspot.infoText2 || ''}</textarea>
+                                <label>Text (mouse enter):</label><textarea data-field="infoText">${escapeHtml(hotspot.infoText)}</textarea>
+                                <label class="text-alternatiu-label">Text al fer clic (sota imatge - suporta Harlowe):</label><textarea data-field="infoText2">${escapeHtml(hotspot.infoText2)}</textarea>
                                 <label>So (clic - nom àudio enregistrat a hal.tracks):</label><input type="text" data-field="soundClick" value="${escapeHtml(hotspot.soundClick || '')}">
                                 <label>So (mouse enter - nom de l'àudio registrat a hal.tracks):</label><input type="text" data-field="sound" value="${escapeHtml(hotspot.sound || '')}">
                                 <label>Etiqueta (apareix quan t'atures sobre):</label><input type="text" data-field="titleText" value="${escapeHtml(hotspot.titleText || '')}">
@@ -973,8 +973,8 @@
                                 <div class="condition-fields-container ${hotspot.enableConditionVariable ? '' : 'hidden-field'}">
                                     <label class="condition-label">Variable (Condició):</label><input type="text" data-field="passageConditionVariable" value="${escapeHtml(hotspot.passageConditionVariable || '')}" placeholder="Ej: $clau">
                                     <label class="condition-label">Valor (Condició):</label><input type="text" data-field="passageConditionValue" value="${escapeHtml(hotspot.passageConditionValue || '')}" placeholder="Ej: true o 1">
-                                    <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="passageFailInfoEnter">${hotspot.passageFailInfoEnter || ''}</textarea>
-                                    <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="passageFailInfo">${hotspot.passageFailInfo || ''}</textarea>
+                                    <label class="condition-label">Text de condició no assolida (mouse enter):</label><textarea data-field="passageFailInfoEnter">${escapeHtml(hotspot.passageFailInfoEnter)}</textarea>
+                                    <label class="condition-label">Text de condició no assolida (clic):</label><textarea data-field="passageFailInfo">${escapeHtml(hotspot.passageFailInfo)}</textarea>
                                     <label class="condition-label">So (clic - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundClickFail" value="${escapeHtml(hotspot.passageSoundClickFail || '')}">
                                     <label class="condition-label">So (mouse enter - mentre no s'assoleix la condició):</label><input type="text" data-field="passageSoundFail" value="${escapeHtml(hotspot.passageSoundFail || '')}">
                                 </div>
@@ -985,8 +985,8 @@
                                 </div>
                                 <div class="visit-limit-section-container ${hotspot.enableVisitLimit ? '' : 'hidden-field'}">
                                     <label class="limit-label">Número de visites:</label><input type="number" data-field="visitLimit" value="${escapeHtml(hotspot.visitLimit || '')}" placeholder="">
-                                    <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${hotspot.visitLimitTextEnter || ''}</textarea>
-                                    <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${hotspot.visitLimitTextClic || ''}</textarea>
+                                    <label class="limit-label">Text de límit de visites (mouse enter):</label><textarea data-field="visitLimitTextEnter">${escapeHtml(hotspot.visitLimitTextEnter)}</textarea>
+                                    <label class="limit-label">Text de límit de visites (clic):</label><textarea data-field="visitLimitTextClic">${escapeHtml(hotspot.visitLimitTextClic)}</textarea>
                                 </div>
                                 <div class="secondary-variable-toggle-container">
                                     <label class="darkblue-label">
@@ -1345,7 +1345,7 @@
                     if (hotspot.titleText) areaTag += `            title="${escapeHtml(hotspot.titleText)}"\n`; // Moved to end
 
                     // Secondary Setter attributes for passage type (only if enabled or has values)
-                    if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) { // FIX: Changed 'hotpot' to 'hotspot'
+                    if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) {
                         if (hotspot.variable2) areaTag += `            data-variable-2="${escapeHtml(formatVariable(hotspot.variable2))}"\n`;
                         if (hotspot.valor2) areaTag += `            data-valor-2="${escapeHtml(hotspot.valor2)}"\n`;
                     }
@@ -1380,8 +1380,11 @@
                         if (startsWithArithmeticOperator) {
                             setMacroContent = `${formattedVariableName} ${valorTrimmed}`;
                         } else if (!isNaN(valorTrimmed) && valorTrimmed !== '') {
+                            formattedValorForMacro = !hasOtherOperator ? `"${valorTrimmed.replace(/"/g, '\\"')}"` : formattedValorForMacro;
                             setMacroContent = `${formattedVariableName} = ${formattedValorForMacro}`;
                         } else {
+                            // If it's not a number and not an arithmetic operation, treat as string.
+                            // Ensure it's quoted unless it contains operators that make it a valid Harlowe expression.
                             if (!hasOtherOperator) {
                                 formattedValorForMacro = `"${valorTrimmed.replace(/"/g, '\\"')}"`;
                             }
@@ -1398,7 +1401,7 @@
                     if (hotspot.valor) areaTag += `            data_valor="${escapeHtml(hotspot.valor)}"\n`;
 
                     // Secondary Setter attributes (only if enabled or has values)
-                    if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) { // FIX: Changed 'hotpot' to 'hotspot'
+                    if (hotspot.enableSecondaryVariable || (hotspot.variable2 && hotspot.valor2)) {
                         if (hotspot.variable2) areaTag += `            data-variable-2="${escapeHtml(formatVariable(hotspot.variable2))}"\n`;
                         if (hotspot.valor2) areaTag += `            data-valor-2="${escapeHtml(hotspot.valor2)}"\n`;
                     }
